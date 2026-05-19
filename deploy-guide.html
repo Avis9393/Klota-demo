@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KLOTA 部署指南</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: #F8F8FA;
+  color: #1E2030;
+  line-height: 1.7;
+}
+.container { max-width: 700px; margin: 0 auto; padding: 40px 20px; }
+h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+.subtitle { font-size: 14px; color: #9999AA; margin-bottom: 32px; }
+.method {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 16px;
+  border: 1px solid #E8E8EE;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+.method-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 14px;
+  letter-spacing: 0.5px;
+}
+.tag-recommend { background: #E0F7FA; color: #00838F; }
+.tag-fast { background: #FFF3E0; color: #E65100; }
+.tag-permanent { background: #E8F5E9; color: #2E7D32; }
+.method h2 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+.method p { font-size: 13px; color: #666; margin-bottom: 16px; }
+.step-list { list-style: none; padding: 0; }
+.step-list li {
+  font-size: 13px;
+  padding: 10px 0;
+  border-bottom: 1px solid #F0F0F5;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.step-list li:last-child { border-bottom: none; }
+.step-num {
+  flex-shrink: 0;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: #00B4D8;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.code-box {
+  background: #1E2030;
+  color: #E0E0E0;
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-family: 'SF Mono', Consolas, 'Courier New', monospace;
+  font-size: 12px;
+  margin: 12px 0;
+  overflow-x: auto;
+  cursor: pointer;
+  position: relative;
+}
+.code-box:hover { opacity: 0.9; }
+.code-box::after {
+  content: '点击复制';
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 10px;
+  color: #888;
+  font-family: -apple-system, sans-serif;
+}
+.note-box {
+  background: #FFF8E1;
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-size: 12px;
+  color: #795548;
+  margin-top: 16px;
+  line-height: 1.8;
+}
+.link-box {
+  display: inline-block;
+  background: #E0F7FA;
+  color: #00838F;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  text-decoration: none;
+  font-weight: 500;
+  margin-top: 8px;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>KLOTA 运维管理工具 — 部署指南</h1>
+  <p class="subtitle">选择任意一种方式，生成外网可访问的演示链接</p>
+
+  <!-- Method 1 -->
+  <div class="method">
+    <span class="method-tag tag-recommend">推荐 · 最简单</span>
+    <h2>方式一：Netlify 拖拽部署（30秒）</h2>
+    <p>无需注册，打开网页拖一下文件就行</p>
+    <ol class="step-list">
+      <li>
+        <span class="step-num">1</span>
+        <div>
+          打开 <a href="https://app.netlify.com/drop" class="link-box" target="_blank">app.netlify.com/drop</a>
+        </div>
+      </li>
+      <li>
+        <span class="step-num">2</span>
+        <div>把项目文件夹里的 <strong>index.html</strong> 文件拖到网页中央的虚线框里</div>
+      </li>
+      <li>
+        <span class="step-num">3</span>
+        <div>等几秒钟，Netlify 会自动分配一个外网地址，格式类似 <code>https://xxx.netlify.app</code></div>
+      </li>
+      <li>
+        <span class="step-num">4</span>
+        <div>把这个地址发到手机上打开，或者生成二维码扫描即可演示</div>
+      </li>
+    </ol>
+    <div class="note-box">
+      <strong>优势：</strong>零门槛、无需安装任何软件、全球 CDN 加速、永久免费<br>
+      <strong>注意：</strong>Netlify 免费版不需要注册账号即可部署，但地址是随机的。如需自定义域名可注册账号。
+    </div>
+  </div>
+
+  <!-- Method 2 -->
+  <div class="method">
+    <span class="method-tag tag-fast">快速</span>
+    <h2>方式二：Vercel 命令部署（1分钟）</h2>
+    <p>适合经常需要更新的场景，一行命令即可</p>
+    <ol class="step-list">
+      <li>
+        <span class="step-num">1</span>
+        <div>打开终端，进入项目目录：</div>
+      </li>
+    </ol>
+    <div class="code-box" onclick="copyCode(this)">cd C:\Users\30653\WorkBuddy\2026-05-19-task-4</div>
+    <ol class="step-list" start="2">
+      <li>
+        <span class="step-num">2</span>
+        <div>运行部署命令（首次会提示登录，用微信扫码即可）：</div>
+      </li>
+    </ol>
+    <div class="code-box" onclick="copyCode(this)">npx vercel --yes --prod</div>
+    <ol class="step-list" start="3">
+      <li>
+        <span class="step-num">3</span>
+        <div>部署完成后终端会输出外网地址，如 <code>https://klota-demo.vercel.app</code></div>
+      </li>
+    </ol>
+    <div class="note-box">
+      <strong>优势：</strong>每次更新文件后重新运行命令即可同步<br>
+      <strong>提示：</strong>需要先安装 Node.js（你的电脑已有）
+    </div>
+  </div>
+
+  <!-- Method 3 -->
+  <div class="method">
+    <span class="method-tag tag-permanent">永久</span>
+    <h2>方式三：腾讯云 COS + CDN</h2>
+    <p>公司如果有腾讯云资源，上传到 COS 对象存储最稳定</p>
+    <ol class="step-list">
+      <li>
+        <span class="step-num">1</span>
+        <div>登录腾讯云控制台，进入 COS 对象存储</div>
+      </li>
+      <li>
+        <span class="step-num">2</span>
+        <div>创建一个公开读的存储桶，上传 index.html</div>
+      </li>
+      <li>
+        <span class="step-num">3</span>
+        <div>开启静态网站托管，获取外网访问域名</div>
+      </li>
+    </ol>
+    <div class="note-box">
+      <strong>优势：</strong>国内访问最快、公司资产可控、可绑定自定义域名<br>
+      <strong>适合：</strong>正式对外服务的场景
+    </div>
+  </div>
+
+  <!-- QR Code Section -->
+  <div class="method" style="text-align:center;">
+    <h2 style="margin-bottom:20px">部署后生成二维码</h2>
+    <p style="margin-bottom:20px">拿到外网地址后，粘贴到下方即可生成二维码</p>
+    <div style="margin-bottom:16px">
+      <input type="text" id="urlInput" placeholder="粘贴你的外网地址，如 https://xxx.netlify.app"
+        style="width:100%;padding:14px 18px;border:1px solid #E8E8EE;border-radius:12px;font-size:14px;outline:none;font-family:inherit;transition:border-color 0.2s"
+        onfocus="this.style.borderColor='#00B4D8'" onblur="this.style.borderColor='#E8E8EE'">
+    </div>
+    <button onclick="generateQR()" style="background:#00B4D8;color:#fff;border:none;padding:12px 32px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;letter-spacing:1px;font-family:inherit">
+      生成二维码
+    </button>
+    <div id="qrResult" style="margin-top:24px;display:none">
+      <div id="qrContainer" style="display:flex;justify-content:center;margin-bottom:16px"></div>
+      <div id="finalUrl" style="font-size:13px;color:#666;word-break:break-all"></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+function copyCode(el) {
+  navigator.clipboard.writeText(el.textContent.trim()).then(() => {
+    const orig = el.textContent;
+    el.textContent = '已复制！';
+    el.style.background = '#2A2C42';
+    setTimeout(() => { el.textContent = orig; el.style.background = ''; }, 1200);
+  });
+}
+function generateQR() {
+  let url = document.getElementById('urlInput').value.trim();
+  if (!url) { document.getElementById('urlInput').style.borderColor='#FA5151'; return; }
+  if (!url.startsWith('http')) url = 'https://' + url;
+  const container = document.getElementById('qrContainer');
+  container.innerHTML = '';
+  new QRCode(container, {
+    text: url,
+    width: 200, height: 200,
+    colorDark: '#1E2030',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+  document.getElementById('finalUrl').textContent = url;
+  document.getElementById('qrResult').style.display = 'block';
+}
+</script>
+</body>
+</html>

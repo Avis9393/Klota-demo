@@ -1,0 +1,1975 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Klota 运维管理工具</title>
+<style>
+:root {
+  --accent: #1E2030;
+  --accent-soft: #2A2C42;
+  --accent-glow: #00B4D8;
+  --accent-glow2: #7C4DFF;
+  --bg: #F8F8FA;
+  --card: #FFFFFF;
+  --text-primary: #1E2030;
+  --text-secondary: #555566;
+  --text-hint: #9999AA;
+  --border: #E8E8EE;
+  --divider: #F0F0F5;
+  --radius: 14px;
+  --radius-sm: 10px;
+  --shadow: 0 2px 16px rgba(0,0,0,0.06);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.10);
+  --glow-sm: 0 0 12px rgba(0,180,216,0.15);
+  --glow-md: 0 0 24px rgba(0,180,216,0.20);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ====== Sci-Fi Animations ====== */
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+@keyframes floatSlow { 0%,100%{transform:translateY(0) rotate(0deg)} 50%{transform:translateY(-8px) rotate(1deg)} }
+@keyframes glowPulse { 0%,100%{opacity:0.4} 50%{opacity:0.8} }
+@keyframes scanLine { 0%{top:-2px} 100%{top:100%} }
+@keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+@keyframes fadeInUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+@keyframes orbitSlow { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+@keyframes particleFloat {
+  0% { transform: translate(0, 0) scale(1); opacity: 0.3; }
+  50% { opacity: 0.7; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+}
+
+/* ====== Phone Frame ====== */
+.phone-frame {
+  max-width: 414px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+}
+
+/* ====== Status Bar ====== */
+.status-bar {
+  height: 44px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  position: relative;
+  overflow: hidden;
+  border-bottom: 0.5px solid var(--border);
+}
+.status-bar::after {
+  content:'';
+  position:absolute;
+  left:0;right:0;bottom:0;
+  height:1px;
+  background:linear-gradient(90deg,transparent 20%,rgba(0,229,255,0.5) 50%,transparent 80%);
+  animation:glowPulse 3s ease infinite;
+}
+
+/* ====== Nav Bar ====== */
+.nav-bar {
+  height: 48px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  color: var(--text-primary);
+  font-size: 17px;
+  font-weight: 600;
+  position: relative;
+  letter-spacing: 1px;
+  overflow: hidden;
+  border-bottom: 0.5px solid var(--border);
+}
+.nav-bar::before {
+  content:'';
+  position:absolute;
+  bottom:0;left:0;right:0;
+  height:1px;
+  background:linear-gradient(90deg,transparent 10%,rgba(0,229,255,0.5) 50%,transparent 90%);
+  animation:glowPulse 4s ease infinite;
+}
+.nav-bar .back {
+  position: absolute;
+  left: 16px;
+  cursor: pointer;
+  font-size: 22px;
+  transition: color 0.2s;
+}
+.nav-bar .back:hover { color: var(--accent-glow); }
+.nav-bar .nav-right {
+  position: absolute;
+  right: 16px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text-hint);
+}
+
+/* ====== Tab Bar ====== */
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 414px;
+  height: 56px;
+  background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 0.5px solid var(--border);
+  display: flex;
+  z-index: 100;
+}
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-hint);
+  font-size: 10px;
+  gap: 2px;
+  transition: color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.tab-item.active { color: var(--accent); }
+.tab-item svg { width: 24px; height: 24px; }
+
+/* ====== Page Container ====== */
+.page {
+  display: none;
+  padding-bottom: 70px;
+  min-height: calc(100vh - 92px);
+}
+.page.active { display: block; animation: fadeInUp 0.3s ease; }
+
+/* ====== ROLE SELECT PAGE ====== */
+.role-page {
+  min-height: 100vh;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 24px 40px;
+  position: relative;
+  overflow: hidden;
+}
+.role-page::before {
+  content:'';
+  position:absolute;
+  top:50%;left:50%;
+  width:500px;height:500px;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(circle,rgba(0,229,255,0.04) 0%,transparent 70%);
+  animation:glowPulse 5s ease infinite;
+  pointer-events:none;
+}
+/* Grid lines */
+.role-page::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(rgba(0,0,0,0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.015) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events:none;
+}
+.role-page .logo-area {
+  text-align: center;
+  margin-bottom: 56px;
+  position: relative;
+  z-index: 1;
+  animation: floatSlow 6s ease-in-out infinite;
+}
+.role-page .logo-icon {
+  width: 76px; height: 76px;
+  border: 1.5px solid rgba(0,229,255,0.2);
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 18px;
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: #F8F8FA;
+  box-shadow: var(--glow-sm), 0 2px 12px rgba(0,0,0,0.06);
+  position: relative;
+}
+.role-page .logo-icon::before {
+  content:'';
+  position:absolute;
+  inset:-6px;
+  border:0.5px solid rgba(0,229,255,0.1);
+  border-radius:26px;
+  animation:orbitSlow 20s linear infinite;
+}
+.role-page .logo-area h1 {
+  color: var(--text-primary);
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 3px;
+}
+.role-page .logo-area p {
+  color: var(--text-hint);
+  font-size: 12px;
+  margin-top: 8px;
+  letter-spacing: 2px;
+}
+.role-cards {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+  z-index: 1;
+}
+.role-card {
+  background: #FAFAFC;
+  backdrop-filter: blur(10px);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.04);
+  transition: all 0.3s ease;
+  -webkit-tap-highlight-color: transparent;
+  animation: fadeInUp 0.5s ease both;
+}
+.role-card:nth-child(2) { animation-delay: 0.1s; }
+.role-card:nth-child(3) { animation-delay: 0.2s; }
+.role-card:hover {
+  border-color: rgba(0,229,255,0.25);
+  box-shadow: var(--glow-sm), 0 4px 24px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+}
+.role-card:active { transform: scale(0.98); }
+.role-card .rc-icon {
+  width: 50px; height: 50px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+  border: 0.5px solid rgba(0,0,0,0.06);
+}
+.role-card .rc-icon.blue { background: rgba(0,229,255,0.08); color: var(--accent-glow); }
+.role-card .rc-icon.green { background: rgba(124,77,255,0.08); color: var(--accent-glow2); }
+.role-card .rc-icon.orange { background: rgba(255,157,59,0.08); color: #FA9D3B; }
+.role-card .rc-info h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 1px;
+}
+.role-card .rc-info p {
+  font-size: 12px;
+  color: var(--text-hint);
+  margin-top: 4px;
+}
+.role-card .rc-arrow {
+  margin-left: auto;
+  color: var(--text-hint);
+  font-size: 18px;
+  transition: all 0.2s;
+}
+.role-card:hover .rc-arrow { color: var(--accent-glow); transform: translateX(2px); }
+
+/* ====== Search Bar ====== */
+.search-bar { padding: 14px 16px; background: var(--bg); }
+.search-box {
+  background: #fff;
+  border-radius: 24px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 10px;
+  border: 1px solid var(--border);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.search-box:focus-within {
+  border-color: rgba(0,229,255,0.3);
+  box-shadow: var(--glow-sm);
+}
+.search-box svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--text-hint); }
+.search-box input {
+  border: none; outline: none; background: transparent;
+  font-size: 13px; color: var(--text-primary); width: 100%;
+}
+.search-box input::placeholder { color: var(--text-hint); }
+
+/* ====== Section ====== */
+.section { padding: 0 16px; margin-bottom: 16px; }
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 0 10px;
+}
+.section-header h3 { font-size: 16px; font-weight: 600; letter-spacing: 0.5px; }
+.section-header .more { font-size: 12px; color: var(--text-hint); cursor: pointer; }
+
+/* ====== Quick Actions Grid ====== */
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 20px 12px;
+  box-shadow: var(--shadow);
+  border: 0.5px solid var(--border);
+}
+.quick-item {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: transform 0.2s;
+}
+.quick-item:active { transform: scale(0.92); }
+.quick-item .qi-icon {
+  width: 46px; height: 46px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  border: 0.5px solid var(--border);
+  transition: all 0.2s;
+}
+.quick-item:hover .qi-icon { box-shadow: var(--glow-sm); border-color: rgba(0,229,255,0.3); }
+.qi-icon.dark { background: var(--accent); color: #fff; border-color: transparent; }
+.qi-icon.dark2 { background: var(--accent-soft); color: #fff; border-color: transparent; }
+.qi-icon.cyan { background: rgba(0,229,255,0.08); color: var(--accent-glow); }
+.qi-icon.purple { background: rgba(124,77,255,0.08); color: var(--accent-glow2); }
+.qi-icon.orange { background: rgba(255,157,59,0.08); color: #FA9D3B; border-color: transparent; }
+.qi-icon.red { background: rgba(250,81,81,0.08); color: #FA5151; border-color: transparent; }
+.qi-icon.blue { background: rgba(87,107,149,0.08); color: #576B95; border-color: transparent; }
+.quick-item .qi-label { font-size: 11px; color: var(--text-secondary); text-align: center; font-weight: 500; }
+
+/* ====== Stat Cards ====== */
+.stat-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.stat-card {
+  background: #fff;
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  border: 0.5px solid var(--border);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+.stat-card:hover { box-shadow: var(--glow-sm); border-color: rgba(0,229,255,0.2); }
+.stat-card .sc-label { font-size: 11px; color: var(--text-hint); letter-spacing: 0.5px; text-transform: uppercase; font-weight: 500; }
+.stat-card .sc-value { font-size: 28px; font-weight: 700; margin: 6px 0 2px; letter-spacing: -0.5px; }
+.stat-card .sc-value.dark { color: var(--accent); }
+.stat-card .sc-value.cyan { color: var(--accent-glow); }
+.stat-card .sc-value.orange { color: #FA9D3B; }
+.stat-card .sc-value.red { color: #FA5151; }
+.stat-card .sc-value.blue { color: #576B95; }
+.stat-card .sc-value.purple { color: var(--accent-glow2); }
+.stat-card .sc-change { font-size: 11px; color: var(--text-hint); }
+
+/* ====== Card ====== */
+.card {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 10px;
+  border: 0.5px solid var(--border);
+  box-shadow: var(--shadow);
+  transition: all 0.2s;
+}
+.card:hover { box-shadow: var(--shadow-lg); }
+.card-title {
+  font-size: 15px; font-weight: 600; margin-bottom: 12px;
+  display: flex; align-items: center; justify-content: space-between;
+  letter-spacing: 0.5px;
+}
+.card-title .badge {
+  font-size: 10px; padding: 3px 10px; border-radius: 20px;
+  font-weight: 500; letter-spacing: 0.5px;
+}
+.badge-cyan { background: rgba(0,229,255,0.08); color: var(--accent-glow); }
+.badge-orange { background: rgba(255,157,59,0.08); color: #FA9D3B; }
+.badge-red { background: rgba(250,81,81,0.08); color: #FA5151; }
+.badge-blue { background: rgba(87,107,149,0.08); color: #576B95; }
+.badge-purple { background: rgba(124,77,255,0.08); color: var(--accent-glow2); }
+.badge-gray { background: #F5F5F8; color: var(--text-hint); }
+.badge-dark { background: var(--accent); color: #fff; }
+
+/* ====== List Item ====== */
+.list-item {
+  display: flex; align-items: center; padding: 14px 0;
+  border-bottom: 0.5px solid var(--divider); cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+.list-item:last-child { border-bottom: none; }
+.list-item:active { background: rgba(0,0,0,0.01); }
+.list-item .li-icon {
+  width: 40px; height: 40px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0; margin-right: 12px;
+}
+.list-item .li-body { flex: 1; min-width: 0; }
+.list-item .li-title {
+  font-size: 14px; font-weight: 600; color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.list-item .li-desc {
+  font-size: 12px; color: var(--text-hint); margin-top: 3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.list-item .li-right { text-align: right; flex-shrink: 0; margin-left: 12px; }
+.list-item .li-tag {
+  font-size: 10px; padding: 3px 8px; border-radius: 20px;
+  margin-bottom: 4px; display: inline-block; font-weight: 500;
+}
+.list-item .li-time { font-size: 11px; color: var(--text-hint); }
+
+/* ====== Progress ====== */
+.progress-bar { height: 5px; background: var(--divider); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+.progress-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+.progress-fill.cyan { background: linear-gradient(90deg, var(--accent-glow), #00B8D4); }
+.progress-fill.orange { background: linear-gradient(90deg, #FA9D3B, #FFB74D); }
+.progress-fill.red { background: linear-gradient(90deg, #FA5151, #FF7043); }
+.progress-fill.blue { background: linear-gradient(90deg, #576B95, #7986CB); }
+.progress-fill.dark { background: linear-gradient(90deg, var(--accent), var(--accent-soft)); }
+
+/* ====== Step Flow ====== */
+.step-flow { display: flex; align-items: center; padding: 4px 0; }
+.step-dot {
+  width: 22px; height: 22px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; color: #fff; flex-shrink: 0; font-weight: 600;
+  transition: all 0.3s;
+}
+.step-dot.done { background: var(--accent); }
+.step-dot.active {
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(0,229,255,0.4);
+  animation: float 2s ease-in-out infinite;
+}
+.step-dot.pending { background: #DDD; }
+.step-line { flex: 1; height: 2px; margin: 0 4px; border-radius: 1px; }
+.step-line.done { background: var(--accent); }
+.step-line.pending { background: #DDD; }
+
+/* ====== Tag ====== */
+.tag {
+  display: inline-block; font-size: 12px; padding: 5px 14px; border-radius: 20px;
+  margin: 3px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  font-weight: 500; transition: all 0.2s; border: 0.5px solid var(--border);
+}
+.tag.active { background: var(--accent); color: #fff; border-color: transparent; box-shadow: var(--glow-sm); }
+.tag.inactive { background: #fff; color: var(--text-secondary); }
+
+/* ====== FAQ Item ====== */
+.faq-item {
+  background: #fff; border-radius: var(--radius-sm); margin-bottom: 8px;
+  overflow: hidden; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  border: 0.5px solid var(--border);
+  transition: all 0.2s;
+}
+.faq-item:hover { border-color: rgba(0,229,255,0.2); }
+.faq-q {
+  padding: 16px; display: flex; align-items: center;
+  justify-content: space-between; font-size: 14px; font-weight: 500;
+}
+.faq-q .arrow { color: var(--text-hint); transition: transform 0.2s; font-size: 14px; }
+.faq-q .arrow.open { transform: rotate(90deg); color: var(--accent-glow); }
+.faq-a {
+  padding: 0 16px 16px; font-size: 13px; color: var(--text-secondary);
+  line-height: 1.8; display: none; background: #FAFAFC;
+  border-top: 0.5px solid var(--divider);
+}
+.faq-a.open { display: block; padding-top: 12px; }
+
+/* ====== Form ====== */
+.form-group { margin-bottom: 16px; }
+.form-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; display: block; font-weight: 500; letter-spacing: 0.5px; }
+.form-label .req { color: #FA5151; margin-left: 2px; }
+.form-input, .form-select, .form-textarea {
+  width: 100%; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 12px 14px; font-size: 14px; color: var(--text-primary);
+  background: #fff; outline: none; -webkit-appearance: none; font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--accent-glow); box-shadow: var(--glow-sm);
+}
+.form-textarea { height: 100px; resize: none; }
+.form-select { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' fill='none' stroke='%23999' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 12px center; padding-right: 32px; }
+
+/* ====== Button ====== */
+.btn {
+  width: 100%; height: 48px; border: none; border-radius: var(--radius-sm);
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent; font-family: inherit;
+  letter-spacing: 1px; transition: all 0.2s;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { box-shadow: var(--glow-md); }
+.btn-primary:active { opacity: 0.85; transform: scale(0.98); }
+.btn-outline { background: #fff; color: var(--accent); border: 1px solid var(--accent); }
+.btn-sm { height: 34px; font-size: 12px; width: auto; padding: 0 18px; }
+
+/* ====== Banner ====== */
+.banner {
+  margin: 0 16px 16px; border-radius: var(--radius); padding: 24px;
+  color: #fff; position: relative; overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+}
+.banner.dark {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-soft) 100%);
+}
+.banner.dark::before {
+  content:''; position:absolute; inset:0;
+  background:
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size:30px 30px; pointer-events:none;
+}
+.banner.dark::after {
+  content:''; position:absolute; bottom:0;left:0;right:0;
+  height:1px;
+  background:linear-gradient(90deg,transparent 10%,var(--accent-glow) 50%,transparent 90%);
+  animation:glowPulse 4s ease infinite;
+}
+.banner h2 { font-size: 20px; font-weight: 600; margin-bottom: 6px; letter-spacing: 2px; }
+.banner p { font-size: 12px; opacity: 0.5; letter-spacing: 1px; }
+.banner .banner-num {
+  font-size: 48px; font-weight: 800; position: absolute; right: 20px; top: 50%;
+  transform: translateY(-50%); opacity: 0.06; letter-spacing: -2px;
+  font-family: 'Helvetica Neue', sans-serif;
+}
+
+/* ====== Tab Filter ====== */
+.tab-filter {
+  display: flex; padding: 0 16px; background: #fff;
+  border-bottom: 0.5px solid var(--border); overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.tab-filter::-webkit-scrollbar { display: none; }
+.tf-item {
+  padding: 14px 16px; font-size: 13px; color: var(--text-secondary);
+  white-space: nowrap; cursor: pointer; position: relative;
+  font-weight: 500; transition: color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.tf-item.active { color: var(--accent); }
+.tf-item.active::after {
+  content:''; position:absolute; bottom:0; left:50%; transform:translateX(-50%);
+  width: 20px; height: 2px; background: var(--accent); border-radius: 1px;
+}
+
+/* ====== Alert ====== */
+.alert-bar {
+  display: flex; align-items: center; padding: 12px 16px; gap: 8px;
+  background: rgba(0,229,255,0.04); border: 0.5px solid rgba(0,229,255,0.1);
+  font-size: 13px; color: var(--accent);
+}
+.alert-bar .alert-icon { font-size: 16px; color: var(--accent-glow); }
+
+/* ====== Avatar ====== */
+.avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 600; color: #fff; flex-shrink: 0;
+}
+.avatar.dark { background: var(--accent); box-shadow: var(--glow-sm); }
+.avatar.cyan { background: var(--accent-glow); }
+.avatar.orange { background: #FA9D3B; }
+.avatar.red { background: #FA5151; }
+.avatar.blue { background: #576B95; }
+
+/* ====== Modal ====== */
+.modal-mask {
+  display:none; position:fixed; top:0;left:0;
+  width:100%;height:100%;background:rgba(0,0,0,0.4);
+  backdrop-filter:blur(8px); z-index:200;
+  align-items:flex-end; justify-content:center;
+}
+.modal-mask.show { display:flex; }
+.modal-content {
+  background:#fff; border-radius:20px 20px 0 0;
+  width:100%; max-width:414px; max-height:80vh; overflow-y:auto;
+  padding:28px 16px; animation:slideUp 0.3s ease;
+}
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+.modal-header h3 { font-size:18px; font-weight:600; letter-spacing:1px; }
+.modal-close { font-size:22px; color:var(--text-hint); cursor:pointer; }
+
+/* ====== Sub-page ====== */
+.sub-page {
+  display:none; position:fixed; top:0; left:50%; transform:translateX(-50%);
+  width:100%; max-width:414px; height:100%;
+  background:var(--bg); z-index:150; overflow-y:auto;
+}
+.sub-page.show { display:block; animation:fadeInUp 0.25s ease; }
+.sub-page .sp-header { position:sticky; top:0; z-index:10; }
+.sub-page .sp-body { padding:16px; padding-bottom:80px; }
+
+/* ====== Notification Dot ====== */
+.dot-badge { position:relative; }
+.dot-badge::after {
+  content:''; position:absolute; top:-2px; right:8px;
+  width:8px; height:8px; background:#FA5151; border-radius:50%;
+  border:2px solid #fff; box-shadow: 0 0 6px rgba(250,81,81,0.4);
+}
+
+/* ====== Chart ====== */
+.chart-box {
+  background:#fff; border-radius:var(--radius-sm);
+  padding:16px; margin-bottom:10px;
+  border:0.5px solid var(--border);
+}
+.chart-title { font-size:14px; font-weight:600; margin-bottom:14px; letter-spacing:0.5px; }
+.mini-bar-chart { display:flex; align-items:flex-end; gap:8px; height:100px; padding-top:8px; }
+.bar-item { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; }
+.bar-fill { width:100%; max-width:28px; border-radius:4px 4px 0 0; transition:height 0.8s ease; }
+.bar-label { font-size:10px; color:var(--text-hint); font-weight:500; }
+
+/* ====== Donut ====== */
+.donut-row { display:flex; align-items:center; gap:24px; }
+.donut-svg { width:90px; height:90px; flex-shrink:0; }
+.donut-legend { flex:1; }
+.legend-item { display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:12px; }
+.legend-dot { width:8px; height:8px; border-radius:2px; flex-shrink:0; }
+.legend-val { margin-left:auto; font-weight:600; color:var(--text-primary); }
+
+/* ====== Person Card ====== */
+.person-card {
+  display:flex; align-items:center; padding:16px; background:#fff;
+  border-radius:var(--radius-sm); margin-bottom:10px;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+  border:0.5px solid var(--border); transition:all 0.2s;
+}
+.person-card:hover { border-color:rgba(0,229,255,0.2); box-shadow:var(--glow-sm); }
+.person-card .pc-info { flex:1; margin-left:14px; }
+.person-card .pc-name { font-size:15px; font-weight:600; }
+.person-card .pc-role { font-size:12px; color:var(--text-hint); margin-top:3px; }
+.person-card .pc-stats { text-align:right; }
+.person-card .pc-stats .num { font-size:20px; font-weight:700; color:var(--accent); }
+.person-card .pc-stats .label { font-size:11px; color:var(--text-hint); }
+
+/* ====== Channel Tag ====== */
+.channel-tag {
+  display:inline-flex; align-items:center; gap:4px;
+  font-size:12px; padding:5px 12px; border-radius:20px;
+  margin:3px; background:#F5F5F8; color:var(--text-secondary);
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+  font-weight:500; transition:all 0.2s;
+}
+.channel-tag.done { background:rgba(0,229,255,0.08); color:var(--accent-glow); border:0.5px solid rgba(0,229,255,0.15); }
+.channel-tag.doing { background:rgba(255,157,59,0.08); color:#FA9D3B; border:0.5px solid rgba(255,157,59,0.15); }
+.channel-tag.pending { background:#F5F5F8; color:var(--text-hint); }
+
+/* ====== Timeline ====== */
+.timeline-item { display:flex; padding-bottom:20px; position:relative; }
+.timeline-item:last-child { padding-bottom:0; }
+.timeline-item::before {
+  content:''; position:absolute; left:7px; top:22px; bottom:0;
+  width:1px; background:var(--border);
+}
+.timeline-item:last-child::before { display:none; }
+.timeline-dot {
+  width:16px; height:16px; border-radius:50%;
+  border:2px solid var(--accent); background:#fff;
+  flex-shrink:0; margin-right:14px; margin-top:3px;
+}
+.timeline-dot.orange { border-color:#FA9D3B; }
+.timeline-dot.red { border-color:#FA5151; }
+.timeline-dot.blue { border-color:#576B95; }
+.timeline-dot.cyan { border-color:var(--accent-glow); box-shadow:var(--glow-sm); }
+.timeline-body { flex:1; }
+.timeline-title { font-size:14px; font-weight:600; }
+.timeline-desc { font-size:12px; color:var(--text-hint); margin-top:3px; }
+.timeline-time { font-size:11px; color:var(--text-hint); margin-top:4px; }
+
+/* ====== Workload Bar ====== */
+.workload-bar { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+.wb-name { font-size:13px; width:56px; flex-shrink:0; font-weight:500; }
+.wb-track {
+  flex:1; height:22px; background:#F5F5F8;
+  border-radius:11px; overflow:hidden;
+}
+.wb-fill {
+  height:100%; border-radius:11px;
+  display:flex; align-items:center; justify-content:flex-end;
+  padding-right:10px; font-size:11px; color:#fff; font-weight:600;
+}
+.wb-count { font-size:12px; color:var(--text-secondary); width:44px; text-align:right; font-weight:500; }
+
+/* ====== Video Card ====== */
+.video-card {
+  background:#fff; border-radius:var(--radius); overflow:hidden;
+  cursor:pointer; border:0.5px solid var(--border);
+  margin-bottom:12px; transition:all 0.2s;
+}
+.video-card:hover { box-shadow:var(--shadow-lg); }
+.video-cover {
+  height:180px; display:flex; align-items:center; justify-content:center;
+  position:relative; overflow:hidden;
+}
+.video-cover .play-btn {
+  width:56px; height:56px; border-radius:50%;
+  background:rgba(0,0,0,0.6); backdrop-filter:blur(10px);
+  display:flex; align-items:center; justify-content:center;
+  color:#fff; font-size:24px; z-index:1;
+  border:1.5px solid rgba(255,255,255,0.2);
+  transition:all 0.3s;
+}
+.video-card:hover .play-btn { transform:scale(1.1); box-shadow:var(--glow-md); }
+.video-info { padding:14px 16px; }
+.video-info .vi-title { font-size:14px; font-weight:600; }
+.video-info .vi-meta { font-size:12px; color:var(--text-hint); margin-top:5px; }
+
+/* ====== Sci-fi Number Display ====== */
+.sci-num {
+  font-family: 'Courier New', 'SF Mono', monospace;
+  font-weight: 700;
+  letter-spacing: -1px;
+}
+
+/* Scrollbar hide */
+::-webkit-scrollbar { width:0; height:0; }
+</style>
+</head>
+<body>
+
+<div class="phone-frame" id="app">
+
+  <!-- ==================== ROLE SELECT PAGE ==================== -->
+  <div class="role-page" id="rolePage">
+    <div class="logo-area">
+      <div class="logo-icon">K</div>
+      <h1>KLOTA</h1>
+      <p>OPERATIONS &amp; MAINTENANCE</p>
+    </div>
+    <div class="role-cards">
+      <div class="role-card" onclick="enterPortal('customer')">
+        <div class="rc-icon blue">&#9881;</div>
+        <div class="rc-info">
+          <h3>对外门户</h3>
+          <p>景区客户 · 查看培训资料与项目进度</p>
+        </div>
+        <span class="rc-arrow">&#8250;</span>
+      </div>
+      <div class="role-card" onclick="enterPortal('internal')">
+        <div class="rc-icon green">&#9881;</div>
+        <div class="rc-info">
+          <h3>对内门户</h3>
+          <p>部门人员 · 工单管理与项目跟进</p>
+        </div>
+        <span class="rc-arrow">&#8250;</span>
+      </div>
+      <div class="role-card" onclick="enterPortal('admin')">
+        <div class="rc-icon orange">&#9881;</div>
+        <div class="rc-info">
+          <h3>管理门户</h3>
+          <p>公司领导 · 全局数据与运营报表</p>
+        </div>
+        <span class="rc-arrow">&#8250;</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== CUSTOMER PORTAL ==================== -->
+  <div id="customerPortal" style="display:none">
+    <div class="status-bar"><span>16:00</span><span style="display:flex;gap:3px;align-items:center"><span style="width:16px;height:10px;border:1.5px solid var(--text-primary);border-radius:2px;position:relative"><span style="position:absolute;right:-3px;top:2px;width:2px;height:4px;background:var(--text-primary);border-radius:0 1px 1px 0"></span><span style="position:absolute;left:2px;top:1.5px;width:6px;height:5px;background:var(--text-primary);border-radius:1px"></span></span><span style="font-size:11px;font-weight:600;margin-left:2px">100%</span></span></div>
+    <div class="nav-bar">KLOTA 客户服务<span class="nav-right" onclick="goBack()">&#10005;</span></div>
+
+    <div class="page active" id="cust-home">
+      <div class="search-bar">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input placeholder="搜索问题、培训资料..." onclick="showSubPage('cust-search')">
+        </div>
+      </div>
+
+      <div class="alert-bar" onclick="showSubPage('cust-progress')">
+        <span class="alert-icon">&#9889;</span>
+        <span>您的项目「黄山风景区」当前处于OTA对接阶段</span>
+      </div>
+
+      <div class="section">
+        <div class="quick-grid">
+          <div class="quick-item" onclick="showSubPage('cust-manual')">
+            <div class="qi-icon dark">&#9776;</div>
+            <span class="qi-label">培训手册</span>
+          </div>
+          <div class="quick-item" onclick="showSubPage('cust-video')">
+            <div class="qi-icon dark2">&#9654;</div>
+            <span class="qi-label">培训视频</span>
+          </div>
+          <div class="quick-item" onclick="showSubPage('cust-faq')">
+            <div class="qi-icon cyan">&#10068;</div>
+            <span class="qi-label">常见问题</span>
+          </div>
+          <div class="quick-item" onclick="showSubPage('cust-contact')">
+            <div class="qi-icon purple">&#9823;</div>
+            <span class="qi-label">负责人查询</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- My Project -->
+      <div class="section">
+        <div class="card">
+          <div class="card-title">我的项目 <span class="badge badge-cyan">进行中</span></div>
+          <div style="font-size:17px;font-weight:700;margin-bottom:4px;letter-spacing:1px">黄山风景区</div>
+          <div style="font-size:12px;color:var(--text-hint);margin-bottom:14px;letter-spacing:0.5px">HT-2025-0618 · 标准版</div>
+          <div class="step-flow">
+            <div class="step-dot done">&#10003;</div>
+            <div class="step-line done"></div>
+            <div class="step-dot done">&#10003;</div>
+            <div class="step-line done"></div>
+            <div class="step-dot active">3</div>
+            <div class="step-line pending"></div>
+            <div class="step-dot pending">4</div>
+            <div class="step-line pending"></div>
+            <div class="step-dot pending">5</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-hint);margin-top:8px">
+            <span>项目启动</span><span>环境搭建</span><span style="color:var(--accent);font-weight:600">OTA对接</span><span>测试联调</span><span>正式上线</span>
+          </div>
+          <div style="margin-top:16px;display:flex;gap:10px">
+            <div style="flex:1;background:#FAFAFC;border-radius:10px;padding:12px;text-align:center;border:0.5px solid var(--border)">
+              <div class="sci-num" style="font-size:22px;color:var(--accent-glow)">12<span style="font-size:13px;color:var(--text-hint)">/86</span></div>
+              <div style="font-size:11px;color:var(--text-hint);margin-top:2px">OTA已对接</div>
+            </div>
+            <div style="flex:1;background:#FAFAFC;border-radius:10px;padding:12px;text-align:center;border:0.5px solid var(--border)">
+              <div class="sci-num" style="font-size:22px;color:var(--accent-glow2)">3<span style="font-size:13px;color:var(--text-hint)">次</span></div>
+              <div style="font-size:11px;color:var(--text-hint);margin-top:2px">培训会议</div>
+            </div>
+            <div style="flex:1;background:#FAFAFC;border-radius:10px;padding:12px;text-align:center;border:0.5px solid var(--border)">
+              <div class="sci-num" style="font-size:22px;color:#FA9D3B">2<span style="font-size:13px;color:var(--text-hint)">件</span></div>
+              <div style="font-size:11px;color:var(--text-hint);margin-top:2px">待处理工单</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Tickets -->
+      <div class="section">
+        <div class="section-header"><h3>我的工单</h3><span class="more" onclick="showSubPage('cust-tickets')">查看全部 &#8250;</span></div>
+        <div class="card" style="padding:0 16px">
+          <div class="list-item" onclick="showSubPage('cust-ticket-detail')">
+            <div class="li-icon" style="background:rgba(255,157,59,0.08);color:#FA9D3B">&#128278;</div>
+            <div class="li-body">
+              <div class="li-title">门票订单退款失败</div>
+              <div class="li-desc">携程渠道订单退款超时未处理</div>
+            </div>
+            <div class="li-right">
+              <span class="li-tag badge-orange">处理中</span>
+              <div class="li-time">05-18</div>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="li-icon" style="background:rgba(0,229,255,0.08);color:var(--accent-glow)">&#10003;</div>
+            <div class="li-body">
+              <div class="li-title">短信通知延迟问题</div>
+              <div class="li-desc">已切换短信服务商，问题已解决</div>
+            </div>
+            <div class="li-right">
+              <span class="li-tag badge-cyan">已解决</span>
+              <div class="li-time">05-15</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header"><h3>项目负责人</h3></div>
+        <div class="card" style="padding:0 16px">
+          <div class="list-item" onclick="showSubPage('cust-contact')">
+            <div class="avatar dark">张</div>
+            <div class="li-body">
+              <div class="li-title">张明远</div>
+              <div class="li-desc">项目经理 · 在线</div>
+            </div>
+            <div class="li-right" style="display:flex;align-items:center">
+              <span style="width:6px;height:6px;border-radius:50%;background:var(--accent-glow);margin-right:4px;box-shadow:0 0 6px var(--accent-glow)"></span>
+              <span class="li-time">在线</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: FAQ -->
+    <div class="page" id="cust-faq-page">
+      <div class="search-bar">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input placeholder="搜索问题关键词..." id="faqSearchInput" oninput="filterFAQ()">
+        </div>
+      </div>
+      <div class="section" style="padding-top:8px">
+        <div style="display:flex;flex-wrap:wrap;gap:0;margin-bottom:14px">
+          <span class="tag active" onclick="filterFAQTag(this,'all')">全部</span>
+          <span class="tag inactive" onclick="filterFAQTag(this,'order')">订单管理</span>
+          <span class="tag inactive" onclick="filterFAQTag(this,'refund')">退款问题</span>
+          <span class="tag inactive" onclick="filterFAQTag(this,'verify')">核销问题</span>
+          <span class="tag inactive" onclick="filterFAQTag(this,'sms')">短信通知</span>
+          <span class="tag inactive" onclick="filterFAQTag(this,'ota')">OTA对接</span>
+        </div>
+        <div id="faqList"></div>
+      </div>
+    </div>
+
+    <!-- Tab: Tickets -->
+    <div class="page" id="cust-ticket-page">
+      <div class="tab-filter">
+        <div class="tf-item active" onclick="filterCustTicket(this,'all')">全部</div>
+        <div class="tf-item" onclick="filterCustTicket(this,'processing')">处理中</div>
+        <div class="tf-item" onclick="filterCustTicket(this,'done')">已解决</div>
+        <div class="tf-item" onclick="filterCustTicket(this,'closed')">已关闭</div>
+      </div>
+      <div class="section" style="padding-top:12px" id="custTicketList">
+        <div class="card" style="padding:0 16px">
+          <div class="list-item" onclick="showSubPage('cust-ticket-detail')">
+            <div class="li-icon" style="background:rgba(255,157,59,0.08);color:#FA9D3B">&#128278;</div>
+            <div class="li-body">
+              <div class="li-title">门票订单退款失败</div>
+              <div class="li-desc">携程渠道订单退款超时未处理</div>
+            </div>
+            <div class="li-right"><span class="li-tag badge-orange">处理中</span><div class="li-time">05-18</div></div>
+          </div>
+          <div class="list-item">
+            <div class="li-icon" style="background:rgba(0,229,255,0.08);color:var(--accent-glow)">&#10003;</div>
+            <div class="li-body">
+              <div class="li-title">短信通知延迟问题</div>
+              <div class="li-desc">已切换短信服务商，问题已解决</div>
+            </div>
+            <div class="li-right"><span class="li-tag badge-cyan">已解决</span><div class="li-time">05-15</div></div>
+          </div>
+          <div class="list-item">
+            <div class="li-icon" style="background:rgba(87,107,149,0.08);color:#576B95">&#9432;</div>
+            <div class="li-body">
+              <div class="li-title">核销码无法识别</div>
+              <div class="li-desc">闸机端扫码识别率低，已提交技术排查</div>
+            </div>
+            <div class="li-right"><span class="li-tag badge-blue">已解决</span><div class="li-time">05-10</div></div>
+          </div>
+          <div class="list-item">
+            <div class="li-icon" style="background:#F5F5F8;color:var(--text-hint)">&#10003;</div>
+            <div class="li-body">
+              <div class="li-title">新增OTA渠道需求</div>
+              <div class="li-desc">需新增驴妈妈渠道对接</div>
+            </div>
+            <div class="li-right"><span class="li-tag badge-gray">已关闭</span><div class="li-time">05-02</div></div>
+          </div>
+        </div>
+      </div>
+      <div style="padding:16px"><button class="btn btn-primary" onclick="showSubPage('cust-new-ticket')">+ 提交新工单</button></div>
+    </div>
+
+    <!-- Tab: Profile -->
+    <div class="page" id="cust-profile-page">
+      <div class="section" style="padding-top:24px">
+        <div class="card" style="text-align:center;padding:28px">
+          <div class="avatar dark" style="width:60px;height:60px;font-size:24px;margin:0 auto 14px">黄</div>
+          <div style="font-size:18px;font-weight:700;letter-spacing:1px">黄山风景区</div>
+          <div style="font-size:12px;color:var(--text-hint);margin-top:6px;letter-spacing:0.5px">HT-2025-0618 · 标准版</div>
+          <div style="display:flex;justify-content:center;gap:36px;margin-top:20px">
+            <div><div class="sci-num" style="font-size:24px;color:var(--accent)">5</div><div style="font-size:11px;color:var(--text-hint);margin-top:2px">工单总数</div></div>
+            <div><div class="sci-num" style="font-size:24px;color:#FA9D3B">1</div><div style="font-size:11px;color:var(--text-hint);margin-top:2px">待处理</div></div>
+            <div><div class="sci-num" style="font-size:24px;color:var(--accent-glow)">3</div><div style="font-size:11px;color:var(--text-hint);margin-top:2px">已解决</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="card" style="padding:0 16px">
+          <div class="list-item" onclick="showSubPage('cust-manual')"><div class="li-body"><div class="li-title">培训手册</div><div class="li-desc">查看操作文档</div></div><span style="color:var(--text-hint);font-size:18px">&#8250;</span></div>
+          <div class="list-item" onclick="showSubPage('cust-video')"><div class="li-body"><div class="li-title">培训视频</div><div class="li-desc">观看培训回放</div></div><span style="color:var(--text-hint);font-size:18px">&#8250;</span></div>
+          <div class="list-item" onclick="showSubPage('cust-contact')"><div class="li-body"><div class="li-title">项目负责人</div><div class="li-desc">查看联系方式</div></div><span style="color:var(--text-hint);font-size:18px">&#8250;</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Customer Tab Bar -->
+    <div class="tab-bar" id="custTabBar">
+      <div class="tab-item active" onclick="switchCustTab(this,'cust-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>首页</div>
+      <div class="tab-item" onclick="switchCustTab(this,'cust-faq-page')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>常见问题</div>
+      <div class="tab-item dot-badge" onclick="switchCustTab(this,'cust-ticket-page')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>工单</div>
+      <div class="tab-item" onclick="switchCustTab(this,'cust-profile-page')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>我的</div>
+    </div>
+  </div>
+
+  <!-- ==================== INTERNAL PORTAL ==================== -->
+  <div id="internalPortal" style="display:none">
+    <div class="status-bar"><span>16:00</span><span style="display:flex;gap:3px;align-items:center"><span style="width:16px;height:10px;border:1.5px solid var(--text-primary);border-radius:2px;position:relative"><span style="position:absolute;right:-3px;top:2px;width:2px;height:4px;background:var(--text-primary);border-radius:0 1px 1px 0"></span><span style="position:absolute;left:2px;top:1.5px;width:6px;height:5px;background:var(--text-primary);border-radius:1px"></span></span><span style="font-size:11px;font-weight:600;margin-left:2px">100%</span></span></div>
+    <div class="nav-bar" style="background:#0A0A0A">KLOTA 运维管理<span class="nav-right" onclick="goBack()">&#10005;</span></div>
+
+    <div class="page active" id="int-home">
+      <div class="banner dark" style="margin:0;border-radius:0">
+        <h2 style="animation:float 4s ease-in-out infinite">今日工作台</h2>
+        <p>2026-05-19 TUE</p>
+        <span class="banner-num">12</span>
+      </div>
+
+      <div class="section" style="margin-top:-10px">
+        <div class="stat-row">
+          <div class="stat-card" style="box-shadow:var(--shadow-lg)">
+            <div class="sc-label">待处理工单</div>
+            <div class="sc-value orange sci-num">12</div>
+            <div class="sc-change">较昨日 +3</div>
+          </div>
+          <div class="stat-card" style="box-shadow:var(--shadow-lg)">
+            <div class="sc-label">进行中项目</div>
+            <div class="sc-value blue sci-num">38</div>
+            <div class="sc-change">本月在服 108</div>
+          </div>
+          <div class="stat-card" style="box-shadow:var(--shadow-lg)">
+            <div class="sc-label">临期预警</div>
+            <div class="sc-value red sci-num">5</div>
+            <div class="sc-change">需立即处理</div>
+          </div>
+          <div class="stat-card" style="box-shadow:var(--shadow-lg)">
+            <div class="sc-label">今日完成</div>
+            <div class="sc-value cyan sci-num">8</div>
+            <div class="sc-change">效率良好</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert-bar" onclick="showSubPage('int-alerts')">
+        <span class="alert-icon">&#9889;</span>
+        <span>5个项目即将到期，请及时跟进处理</span>
+        <span style="margin-left:auto;font-size:16px">&#8250;</span>
+      </div>
+
+      <div class="section">
+        <div class="quick-grid">
+          <div class="quick-item" onclick="showSubPage('int-tickets')"><div class="qi-icon dark">&#9776;</div><span class="qi-label">工单分配</span></div>
+          <div class="quick-item" onclick="showSubPage('int-projects')"><div class="qi-icon dark2">&#9638;</div><span class="qi-label">项目进度</span></div>
+          <div class="quick-item" onclick="showSubPage('int-channels')"><div class="qi-icon cyan">&#128279;</div><span class="qi-label">渠道对接</span></div>
+          <div class="quick-item" onclick="showSubPage('int-sms')"><div class="qi-icon purple">&#128241;</div><span class="qi-label">短信管理</span></div>
+          <div class="quick-item" onclick="showSubPage('int-manual')"><div class="qi-icon blue">&#9776;</div><span class="qi-label">培训手册</span></div>
+          <div class="quick-item" onclick="showSubPage('int-video')"><div class="qi-icon dark2">&#9654;</div><span class="qi-label">培训视频</span></div>
+          <div class="quick-item" onclick="showSubPage('int-person')"><div class="qi-icon orange">&#9823;</div><span class="qi-label">人员管理</span></div>
+          <div class="quick-item" onclick="showSubPage('int-kunlun')"><div class="qi-icon dark">&#9881;</div><span class="qi-label">昆仑对接</span></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="card">
+          <div class="card-title">团队工作量</div>
+          <div class="workload-bar">
+            <span class="wb-name">张明远</span>
+            <div class="wb-track"><div class="wb-fill" style="width:75%;background:linear-gradient(90deg,#0A0A0A,#333)">9件</div></div>
+            <span class="wb-count">9/12</span>
+          </div>
+          <div class="workload-bar">
+            <span class="wb-name">李晓婷</span>
+            <div class="wb-track"><div class="wb-fill" style="width:92%;background:linear-gradient(90deg,#FA9D3B,#FFB74D)">11件</div></div>
+            <span class="wb-count">11/12</span>
+          </div>
+          <div class="workload-bar">
+            <span class="wb-name">王浩然</span>
+            <div class="wb-track"><div class="wb-fill" style="width:58%;background:linear-gradient(90deg,var(--accent-glow2),#9575CD)">7件</div></div>
+            <span class="wb-count">7/12</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-hint);margin-top:10px;text-align:right">日均建议上限 12 件</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header"><h3>最新工单</h3><span class="more" onclick="showSubPage('int-tickets')">全部 &#8250;</span></div>
+        <div class="card" style="padding:0 16px">
+          <div class="list-item" onclick="showSubPage('int-ticket-detail')">
+            <div class="li-icon" style="background:rgba(250,81,81,0.08);color:#FA5151">&#128680;</div>
+            <div class="li-body">
+              <div class="li-title">【加急】泰山景区核销异常</div>
+              <div class="li-desc">闸机核销失败率突增至30%</div>
+            </div>
+            <div class="li-right"><span class="li-tag badge-red">紧急</span><div class="li-time">10min前</div></div>
+          </div>
+          <div class="list-item">
+            <div class="li-icon" style="background:rgba(255,157,59,0.08);color:#FA9D3B">&#128279;</div>
+            <div class="li-body">
+              <div class="li-title">峨眉山 OTA对接任务</div>
+              <div class="li-desc">邮件任务：新增4个渠道</div>
+            </div>
+            <div class="li-right"><span class="li-tag badge-orange">待分配</span><div class="li-time">30min前</div></div>
+          </div>
+          <div class="list-item">
+            <div class="li-icon" style="background:rgba(0,229,255,0.08);color:var(--accent-glow)">&#128241;</div>
+            <div class="li-body">
+              <div class="li-title">九寨沟短信服务商切换</div>
+              <div class="li-desc">阿里云 → 腾讯云</div>
+            </div>
+            <div class="li-right"><span class="li-tag badge-cyan">进行中</span><div class="li-time">1h前</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Projects -->
+    <div class="page" id="int-project-page">
+      <div class="search-bar">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input placeholder="搜索项目名称...">
+        </div>
+      </div>
+      <div class="tab-filter">
+        <div class="tf-item active">全部(108)</div>
+        <div class="tf-item">对接中(32)</div>
+        <div class="tf-item">已上线(68)</div>
+        <div class="tf-item">有预警(8)</div>
+      </div>
+      <div class="section" style="padding-top:12px">
+        <div class="card" style="padding:0 16px">
+          <div class="list-item" onclick="showSubPage('int-project-detail')">
+            <div class="li-icon" style="background:rgba(255,157,59,0.08);color:#FA9D3B">&#9968;</div>
+            <div class="li-body">
+              <div class="li-title">黄山风景区</div>
+              <div class="li-desc">OTA对接中 · 12/86渠道 · 张明远</div>
+              <div class="progress-bar"><div class="progress-fill orange" style="width:14%"></div></div>
+            </div>
+            <div class="li-right"><span class="li-tag badge-orange">对接中</span></div>
+          </div>
+          <div class="list-item">
+            <div class="li-icon" style="background:rgba(250,81,81,0.08);color:#FA5151">&#9968;</div>
+            <div class="li-body">
+              <div class="li-title">泰山景区</div>
+              <div class="li-desc">核销异常 · 临期3天 · 李晓婷</div>
+            </div>
+            <div class="li-right"><span class="li-tag badge-red">异常</span></div>
+          </div>
+          <div class="list-item">
+            <div class="li-icon" style="background:rgba(0,229,255,0.08);color:var(--accent-glow)">&#9968;</div>
+            <div class="li-body">
+              <div class="li-title">张家界</div>
+              <div class="li-desc">已上线 · 120/120 · 王浩然</div>
+              <div class="progress-bar"><div class="progress-fill dark" style="width:100%"></div></div>
+            </div>
+            <div class="li-right"><span class="li-tag badge-cyan">已上线</span></div>
+          </div>
+          <div class="list-item">
+            <div class="li-icon" style="background:rgba(255,157,59,0.08);color:#FA9D3B">&#9968;</div>
+            <div class="li-body">
+              <div class="li-title">九寨沟</div>
+              <div class="li-desc">短信切换 · 95/120 · 李晓婷</div>
+              <div class="progress-bar"><div class="progress-fill orange" style="width:79%"></div></div>
+            </div>
+            <div class="li-right"><span class="li-tag badge-orange">进行中</span></div>
+          </div>
+          <div class="list-item">
+            <div class="li-icon" style="background:rgba(0,229,255,0.08);color:var(--accent-glow)">&#9968;</div>
+            <div class="li-body">
+              <div class="li-title">故宫博物院</div>
+              <div class="li-desc">已上线 · 156/156 · 张明远</div>
+              <div class="progress-bar"><div class="progress-fill dark" style="width:100%"></div></div>
+            </div>
+            <div class="li-right"><span class="li-tag badge-cyan">已上线</span></div>
+          </div>
+          <div class="list-item">
+            <div class="li-icon" style="background:rgba(87,107,149,0.08);color:#576B95">&#9968;</div>
+            <div class="li-body">
+              <div class="li-title">西湖景区</div>
+              <div class="li-desc">联调 · 98/110 · 王浩然</div>
+              <div class="progress-bar"><div class="progress-fill blue" style="width:89%"></div></div>
+            </div>
+            <div class="li-right"><span class="li-tag badge-blue">联调中</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Channels -->
+    <div class="page" id="int-channel-page">
+      <div class="tab-filter">
+        <div class="tf-item active">全部渠道</div>
+        <div class="tf-item">自主对接</div>
+        <div class="tf-item">商务下单</div>
+        <div class="tf-item">短信服务商</div>
+      </div>
+      <div class="section" style="padding-top:12px">
+        <div class="card">
+          <div class="card-title">渠道对接总览</div>
+          <div class="stat-row" style="margin-bottom:0">
+            <div class="stat-card"><div class="sc-label">已入驻</div><div class="sc-value cyan sci-num">486</div></div>
+            <div class="stat-card"><div class="sc-label">自主对接</div><div class="sc-value purple sci-num">128</div></div>
+            <div class="stat-card"><div class="sc-label">对接中</div><div class="sc-value orange sci-num">23</div></div>
+            <div class="stat-card"><div class="sc-label">待启动</div><div class="sc-value dark sci-num">15</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">OTA渠道分类</div>
+          <div style="margin-bottom:14px">
+            <div style="font-size:12px;color:var(--text-hint);margin-bottom:8px;font-weight:500;letter-spacing:0.5px">综合平台</div>
+            <div><span class="channel-tag done">携程 &#10003;</span><span class="channel-tag done">美团 &#10003;</span><span class="channel-tag done">飞猪 &#10003;</span><span class="channel-tag done">去哪儿 &#10003;</span><span class="channel-tag done">同程 &#10003;</span><span class="channel-tag done">途牛 &#10003;</span><span class="channel-tag done">驴妈妈 &#10003;</span></div>
+          </div>
+          <div style="margin-bottom:14px">
+            <div style="font-size:12px;color:var(--text-hint);margin-bottom:8px;font-weight:500;letter-spacing:0.5px">短视频/直播</div>
+            <div><span class="channel-tag done">抖音 &#10003;</span><span class="channel-tag done">快手 &#10003;</span><span class="channel-tag done">小红书 &#10003;</span><span class="channel-tag doing">视频号 &#8230;</span></div>
+          </div>
+          <div style="margin-bottom:14px">
+            <div style="font-size:12px;color:var(--text-hint);margin-bottom:8px;font-weight:500;letter-spacing:0.5px">本地生活</div>
+            <div><span class="channel-tag done">大众点评 &#10003;</span><span class="channel-tag done">口碑 &#10003;</span><span class="channel-tag done">支付宝 &#10003;</span><span class="channel-tag pending">百度地图</span></div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--text-hint);margin-bottom:8px;font-weight:500;letter-spacing:0.5px">旅行社/TA</div>
+            <div><span class="channel-tag done">春秋旅游 &#10003;</span><span class="channel-tag doing">广之旅 &#8230;</span><span class="channel-tag pending">中青旅</span><span class="channel-tag pending">凯撒旅游</span><span class="channel-tag pending">国旅总社</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">短信服务商</div>
+          <div class="list-item">
+            <div class="li-icon" style="background:rgba(0,229,255,0.08);color:var(--accent-glow)">&#10003;</div>
+            <div class="li-body"><div class="li-title">阿里云短信</div><div class="li-desc">当前主力 · 56个项目</div></div>
+            <span class="li-tag badge-cyan">使用中</span>
+          </div>
+          <div class="list-item">
+            <div class="li-icon" style="background:rgba(87,107,149,0.08);color:#576B95">&#128241;</div>
+            <div class="li-body"><div class="li-title">腾讯云短信</div><div class="li-desc">备用 · 28个项目</div></div>
+            <span class="li-tag badge-blue">使用中</span>
+          </div>
+          <div class="list-item">
+            <div class="li-icon" style="background:rgba(255,157,59,0.08);color:#FA9D3B">&#128274;</div>
+            <div class="li-body"><div class="li-title">华为云短信</div><div class="li-desc">待接入 · 商务已对接</div></div>
+            <span class="li-tag badge-orange">待接入</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Alert -->
+    <div class="page" id="int-alert-page">
+      <div class="tab-filter">
+        <div class="tf-item active">预警(5)</div>
+        <div class="tf-item">临期(8)</div>
+        <div class="tf-item">超时(2)</div>
+      </div>
+      <div class="section" style="padding-top:12px">
+        <div class="card" style="padding:0 16px">
+          <div class="list-item">
+            <div class="li-icon" style="background:rgba(250,81,81,0.08);color:#FA5151">&#128680;</div>
+            <div class="li-body"><div class="li-title">泰山景区 · 合同临期</div><div class="li-desc">到期剩余 3 天</div></div>
+            <span class="li-tag badge-red">紧急</span>
+          </div>
+          <div class="list-item">
+            <div class="li-icon" style="background:rgba(255,157,59,0.08);color:#FA9D3B">&#9200;</div>
+            <div class="li-body"><div class="li-title">黄山 · OTA对接超时</div><div class="li-desc">超期5天 · 剩余74渠道</div></div>
+            <span class="li-tag badge-orange">超时</span>
+          </div>
+          <div class="list-item">
+            <div class="li-icon" style="background:rgba(255,157,59,0.08);color:#FA9D3B">&#9200;</div>
+            <div class="li-body"><div class="li-title">峨眉山 · 启动延迟</div><div class="li-desc">等待商务合同确认</div></div>
+            <span class="li-tag badge-orange">卡点</span>
+          </div>
+          <div class="list-item">
+            <div class="li-icon" style="background:rgba(87,107,149,0.08);color:#576B95">&#128197;</div>
+            <div class="li-body"><div class="li-title">武夷山 · 培训待确认</div><div class="li-desc">已上线 · 培训时间待定</div></div>
+            <span class="li-tag badge-blue">待确认</span>
+          </div>
+          <div class="list-item">
+            <div class="li-icon" style="background:rgba(255,157,59,0.08);color:#FA9D3B">&#128197;</div>
+            <div class="li-body"><div class="li-title">千岛湖 · 合同临期</div><div class="li-desc">到期剩余 15 天</div></div>
+            <span class="li-tag badge-orange">临期</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Internal Tab Bar -->
+    <div class="tab-bar" id="intTabBar">
+      <div class="tab-item active" onclick="switchIntTab(this,'int-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>工作台</div>
+      <div class="tab-item" onclick="switchIntTab(this,'int-project-page')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>项目</div>
+      <div class="tab-item" onclick="switchIntTab(this,'int-channel-page')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>渠道</div>
+      <div class="tab-item dot-badge" onclick="switchIntTab(this,'int-alert-page')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>预警</div>
+    </div>
+  </div>
+
+  <!-- ==================== ADMIN PORTAL ==================== -->
+  <div id="adminPortal" style="display:none">
+    <div class="status-bar"><span>16:00</span><span style="display:flex;gap:3px;align-items:center"><span style="width:16px;height:10px;border:1.5px solid var(--text-primary);border-radius:2px;position:relative"><span style="position:absolute;right:-3px;top:2px;width:2px;height:4px;background:var(--text-primary);border-radius:0 1px 1px 0"></span><span style="position:absolute;left:2px;top:1.5px;width:6px;height:5px;background:var(--text-primary);border-radius:1px"></span></span><span style="font-size:11px;font-weight:600;margin-left:2px">100%</span></span></div>
+    <div class="nav-bar" style="background:#0A0A0A">KLOTA 运营管理<span class="nav-right" onclick="goBack()">&#10005;</span></div>
+
+    <div class="page active" id="adm-home">
+      <div class="banner dark" style="margin:0;border-radius:0">
+        <h2 style="animation:float 4s ease-in-out infinite">运营总览</h2>
+        <p>2026-05-19 · 在服 108 项目</p>
+        <span class="banner-num">108</span>
+      </div>
+
+      <div class="section" style="margin-top:-10px">
+        <div class="stat-row">
+          <div class="stat-card" style="box-shadow:var(--shadow-lg)"><div class="sc-label">在服项目</div><div class="sc-value blue sci-num">108</div><div class="sc-change">本月 +5</div></div>
+          <div class="stat-card" style="box-shadow:var(--shadow-lg)"><div class="sc-label">累计工单</div><div class="sc-value cyan sci-num">1,286</div><div class="sc-change">本月 186</div></div>
+          <div class="stat-card" style="box-shadow:var(--shadow-lg)"><div class="sc-label">平均响应</div><div class="sc-value dark sci-num">2.3h</div><div class="sc-change">目标 4h</div></div>
+          <div class="stat-card" style="box-shadow:var(--shadow-lg)"><div class="sc-label">满意度</div><div class="sc-value purple sci-num">96%</div><div class="sc-change">+2% MoM</div></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="chart-box">
+          <div class="chart-title">项目状态分布</div>
+          <div class="donut-row">
+            <svg class="donut-svg" viewBox="0 0 42 42">
+              <circle cx="21" cy="21" r="15.9" fill="none" stroke="#F0F0F5" stroke-width="4"/>
+              <circle cx="21" cy="21" r="15.9" fill="none" stroke="#0A0A0A" stroke-width="4" stroke-dasharray="63 37" stroke-dashoffset="25"/>
+              <circle cx="21" cy="21" r="15.9" fill="none" stroke="#FA9D3B" stroke-width="4" stroke-dasharray="24 76" stroke-dashoffset="62"/>
+              <circle cx="21" cy="21" r="15.9" fill="none" stroke="#576B95" stroke-width="4" stroke-dasharray="10 90" stroke-dashoffset="38"/>
+              <circle cx="21" cy="21" r="15.9" fill="none" stroke="#FA5151" stroke-width="4" stroke-dasharray="3 97" stroke-dashoffset="28"/>
+            </svg>
+            <div class="donut-legend">
+              <div class="legend-item"><span class="legend-dot" style="background:#0A0A0A"></span>已上线<span class="legend-val">68 (63%)</span></div>
+              <div class="legend-item"><span class="legend-dot" style="background:#FA9D3B"></span>对接中<span class="legend-val">26 (24%)</span></div>
+              <div class="legend-item"><span class="legend-dot" style="background:#576B95"></span>联调<span class="legend-val">11 (10%)</span></div>
+              <div class="legend-item"><span class="legend-dot" style="background:#FA5151"></span>异常<span class="legend-val">3 (3%)</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="chart-box">
+          <div class="chart-title">本月工单趋势</div>
+          <div class="mini-bar-chart">
+            <div class="bar-item"><div class="bar-fill" style="height:45%;background:#0A0A0A"></div><span class="bar-label">周一</span></div>
+            <div class="bar-item"><div class="bar-fill" style="height:60%;background:#0A0A0A"></div><span class="bar-label">周二</span></div>
+            <div class="bar-item"><div class="bar-fill" style="height:35%;background:#0A0A0A"></div><span class="bar-label">周三</span></div>
+            <div class="bar-item"><div class="bar-fill" style="height:80%;background:#FA9D3B"></div><span class="bar-label">周四</span></div>
+            <div class="bar-item"><div class="bar-fill" style="height:55%;background:#0A0A0A"></div><span class="bar-label">周五</span></div>
+            <div class="bar-item"><div class="bar-fill" style="height:25%;background:#576B95"></div><span class="bar-label">周六</span></div>
+            <div class="bar-item"><div class="bar-fill" style="height:20%;background:#576B95"></div><span class="bar-label">周日</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="card">
+          <div class="card-title">部门工作量 <span class="badge badge-gray">本月</span></div>
+          <div class="workload-bar">
+            <span class="wb-name">张明远</span>
+            <div class="wb-track"><div class="wb-fill" style="width:72%;background:linear-gradient(90deg,#0A0A0A,#333)">68件</div></div>
+            <span class="wb-count">68件</span>
+          </div>
+          <div class="workload-bar">
+            <span class="wb-name">李晓婷</span>
+            <div class="wb-track"><div class="wb-fill" style="width:88%;background:linear-gradient(90deg,#FA9D3B,#FFB74D)">82件</div></div>
+            <span class="wb-count">82件</span>
+          </div>
+          <div class="workload-bar">
+            <span class="wb-name">王浩然</span>
+            <div class="wb-track"><div class="wb-fill" style="width:54%;background:linear-gradient(90deg,var(--accent-glow2),#9575CD)">50件</div></div>
+            <span class="wb-count">50件</span>
+          </div>
+          <div class="workload-bar">
+            <span class="wb-name">统筹</span>
+            <div class="wb-track"><div class="wb-fill" style="width:35%;background:#DDD;color:var(--text-secondary)">36件</div></div>
+            <span class="wb-count">36件</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="card">
+          <div class="card-title" style="color:#FA5151">临期项目预警 <span class="badge badge-red">Q2</span></div>
+          <div class="list-item">
+            <div class="li-body"><div class="li-title">泰山景区</div><div class="li-desc">到期日：2026-05-22 · 剩余 3 天</div></div>
+            <span class="li-tag badge-red">紧急</span>
+          </div>
+          <div class="list-item">
+            <div class="li-body"><div class="li-title">千岛湖</div><div class="li-desc">到期日：2026-06-03 · 剩余 15 天</div></div>
+            <span class="li-tag badge-orange">临期</span>
+          </div>
+          <div class="list-item">
+            <div class="li-body"><div class="li-title">凤凰古城</div><div class="li-desc">到期日：2026-06-10 · 剩余 22 天</div></div>
+            <span class="li-tag badge-orange">临期</span>
+          </div>
+          <div class="list-item">
+            <div class="li-body"><div class="li-title">武夷山</div><div class="li-desc">到期日：2026-06-18 · 剩余 30 天</div></div>
+            <span class="li-tag badge-blue">关注</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="card">
+          <div class="card-title">昆仑技术对接</div>
+          <div class="timeline-item">
+            <div class="timeline-dot cyan"></div>
+            <div class="timeline-body">
+              <div class="timeline-title">月度账号给出确认</div>
+              <div class="timeline-desc">刘卫国已确认，本月新增 8 个账号</div>
+              <div class="timeline-time">2026-05-15</div>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot orange"></div>
+            <div class="timeline-body">
+              <div class="timeline-title">Switch接口切换</div>
+              <div class="timeline-desc">新老Switch切换中，已完成 3/5 个项目</div>
+              <div class="timeline-time">2026-05-10 · 进行中</div>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot blue"></div>
+            <div class="timeline-body">
+              <div class="timeline-title">线上版本更新发布</div>
+              <div class="timeline-desc">v3.2.1 已发布，全入驻微信群通知已发送</div>
+              <div class="timeline-time">2026-05-08</div>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-body">
+              <div class="timeline-title">API错误消息优化</div>
+              <div class="timeline-desc">已完成12个高频错误码优化</div>
+              <div class="timeline-time">2026-05-05</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="card">
+          <div class="card-title">服务质量指标</div>
+          <div class="stat-row">
+            <div class="stat-card"><div class="sc-label">平均响应</div><div class="sc-value cyan sci-num">2.3h</div><div class="sc-change">目标 4h</div></div>
+            <div class="stat-card"><div class="sc-label">平均解决</div><div class="sc-value blue sci-num">18.6h</div><div class="sc-change">目标 24h</div></div>
+            <div class="stat-card"><div class="sc-label">首次解决率</div><div class="sc-value dark sci-num">82%</div><div class="sc-change">+5% MoM</div></div>
+            <div class="stat-card"><div class="sc-label">满意度</div><div class="sc-value purple sci-num">96%</div><div class="sc-change">4.8/5.0</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin Tab: Report -->
+    <div class="page" id="adm-report-page">
+      <div class="section" style="padding-top:16px">
+        <div class="card">
+          <div class="card-title">季度数据报表</div>
+          <div class="list-item" onclick="showSubPage('adm-report-detail')">
+            <div class="li-icon" style="background:rgba(10,10,10,0.05);color:var(--accent)">&#128202;</div>
+            <div class="li-body"><div class="li-title">2026 Q2 运营报告</div><div class="li-desc">临期统计 · 工单分析 · 服务质量</div></div>
+            <span style="color:var(--text-hint)">&#8250;</span>
+          </div>
+          <div class="list-item">
+            <div class="li-icon" style="background:rgba(87,107,149,0.08);color:#576B95">&#128202;</div>
+            <div class="li-body"><div class="li-title">2026 Q1 运营报告</div><div class="li-desc">已归档 · 完成率 94%</div></div>
+            <span style="color:var(--text-hint)">&#8250;</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">环企专项</div>
+          <div class="list-item">
+            <div class="li-icon" style="background:rgba(250,81,81,0.08);color:#FA5151">&#128197;</div>
+            <div class="li-body"><div class="li-title">Q2 临期项目通知</div><div class="li-desc">已发送 · 涉及 8 个项目</div></div>
+            <span class="li-tag badge-cyan">已发送</span>
+          </div>
+          <div class="list-item">
+            <div class="li-icon" style="background:rgba(0,229,255,0.08);color:var(--accent-glow)">&#128196;</div>
+            <div class="li-body"><div class="li-title">账号给出月度统计</div><div class="li-desc">5月统计表已确认</div></div>
+            <span class="li-tag badge-cyan">已完成</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">渠道对接统计</div>
+          <div class="mini-bar-chart" style="height:80px">
+            <div class="bar-item"><div class="bar-fill" style="height:90%;background:#0A0A0A"></div><span class="bar-label">1月</span></div>
+            <div class="bar-item"><div class="bar-fill" style="height:65%;background:#0A0A0A"></div><span class="bar-label">2月</span></div>
+            <div class="bar-item"><div class="bar-fill" style="height:75%;background:#0A0A0A"></div><span class="bar-label">3月</span></div>
+            <div class="bar-item"><div class="bar-fill" style="height:85%;background:#576B95"></div><span class="bar-label">4月</span></div>
+            <div class="bar-item"><div class="bar-fill" style="height:95%;background:#FA9D3B"></div><span class="bar-label">5月</span></div>
+          </div>
+          <div style="font-size:11px;color:var(--text-hint);text-align:center;margin-top:8px">月度渠道对接完成数</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-bar" id="admTabBar">
+      <div class="tab-item active" onclick="switchAdmTab(this,'adm-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>总览</div>
+      <div class="tab-item" onclick="switchAdmTab(this,'adm-report-page')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>报表</div>
+    </div>
+  </div>
+
+  <!-- ==================== SUB PAGES ==================== -->
+  <div class="sub-page" id="sub-cust-search">
+    <div class="sp-header">
+      <div class="status-bar"><span>16:00</span><span style="display:flex;gap:3px;align-items:center"><span style="width:16px;height:10px;border:1.5px solid var(--text-primary);border-radius:2px;position:relative"><span style="position:absolute;right:-3px;top:2px;width:2px;height:4px;background:var(--text-primary);border-radius:0 1px 1px 0"></span><span style="position:absolute;left:2px;top:1.5px;width:6px;height:5px;background:var(--text-primary);border-radius:1px"></span></span><span style="font-size:11px;font-weight:600;margin-left:2px">100%</span></span></div>
+      <div class="nav-bar" style="background:#fff;color:var(--text-primary)">
+        <span class="back" onclick="closeSubPage('cust-search')">&#8249;</span>搜索
+      </div>
+    </div>
+    <div class="sp-body">
+      <div class="search-bar" style="padding:0">
+        <div class="search-box" style="border:1px solid var(--accent)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input placeholder="搜索问题关键词..." autofocus>
+        </div>
+      </div>
+      <div style="padding:16px 0">
+        <div style="font-size:12px;color:var(--text-hint);margin-bottom:12px;font-weight:500;letter-spacing:0.5px">热门搜索</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <span class="tag inactive">退款失败</span>
+          <span class="tag inactive">核销码无效</span>
+          <span class="tag inactive">OTA订单同步</span>
+          <span class="tag inactive">短信收不到</span>
+          <span class="tag inactive">门票价格修改</span>
+          <span class="tag inactive">扫码购配置</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-page" id="sub-cust-manual">
+    <div class="sp-header">
+      <div class="status-bar"><span>16:00</span><span style="display:flex;gap:3px;align-items:center"><span style="width:16px;height:10px;border:1.5px solid var(--text-primary);border-radius:2px;position:relative"><span style="position:absolute;right:-3px;top:2px;width:2px;height:4px;background:var(--text-primary);border-radius:0 1px 1px 0"></span><span style="position:absolute;left:2px;top:1.5px;width:6px;height:5px;background:var(--text-primary);border-radius:1px"></span></span><span style="font-size:11px;font-weight:600;margin-left:2px">100%</span></span></div>
+      <div class="nav-bar" style="background:#fff;color:var(--text-primary)">
+        <span class="back" onclick="closeSubPage('cust-manual')">&#8249;</span>培训手册
+      </div>
+    </div>
+    <div class="sp-body">
+      <div class="list-item" style="padding:14px 0">
+        <div class="li-icon" style="background:#0A0A0A;color:#fff;border-radius:10px">&#9776;</div>
+        <div class="li-body"><div class="li-title">Klota 订单管理操作手册</div><div class="li-desc">PDF · 2.3MB · 2026-04 更新</div></div>
+        <span style="color:var(--accent-glow);font-size:20px">&#8599;</span>
+      </div>
+      <div class="list-item" style="padding:14px 0">
+        <div class="li-icon" style="background:#1A1A2E;color:#fff;border-radius:10px">&#9776;</div>
+        <div class="li-body"><div class="li-title">门票核销操作指南</div><div class="li-desc">PDF · 1.8MB · 2026-03 更新</div></div>
+        <span style="color:var(--accent-glow);font-size:20px">&#8599;</span>
+      </div>
+      <div class="list-item" style="padding:14px 0">
+        <div class="li-icon" style="background:rgba(255,157,59,0.08);color:#FA9D3B;border-radius:10px">&#9776;</div>
+        <div class="li-body"><div class="li-title">退款流程操作手册</div><div class="li-desc">PDF · 1.5MB · 2026-04 更新</div></div>
+        <span style="color:var(--accent-glow);font-size:20px">&#8599;</span>
+      </div>
+      <div class="list-item" style="padding:14px 0">
+        <div class="li-icon" style="background:rgba(87,107,149,0.08);color:#576B95;border-radius:10px">&#9776;</div>
+        <div class="li-body"><div class="li-title">短信通知配置指南</div><div class="li-desc">PDF · 1.1MB · 2026-02 更新</div></div>
+        <span style="color:var(--accent-glow);font-size:20px">&#8599;</span>
+      </div>
+      <div class="list-item" style="padding:14px 0">
+        <div class="li-icon" style="background:rgba(124,77,255,0.08);color:var(--accent-glow2);border-radius:10px">&#9776;</div>
+        <div class="li-body"><div class="li-title">OTA对接操作手册</div><div class="li-desc">PDF · 3.2MB · 2026-05 更新</div></div>
+        <span style="color:var(--accent-glow);font-size:20px">&#8599;</span>
+      </div>
+      <div class="list-item" style="padding:14px 0">
+        <div class="li-icon" style="background:rgba(0,229,255,0.08);color:var(--accent-glow);border-radius:10px">&#9776;</div>
+        <div class="li-body"><div class="li-title">扫码购配置操作指南</div><div class="li-desc">PDF · 0.9MB · 2026-01 更新</div></div>
+        <span style="color:var(--accent-glow);font-size:20px">&#8599;</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-page" id="sub-cust-video">
+    <div class="sp-header">
+      <div class="status-bar"><span>16:00</span><span style="display:flex;gap:3px;align-items:center"><span style="width:16px;height:10px;border:1.5px solid var(--text-primary);border-radius:2px;position:relative"><span style="position:absolute;right:-3px;top:2px;width:2px;height:4px;background:var(--text-primary);border-radius:0 1px 1px 0"></span><span style="position:absolute;left:2px;top:1.5px;width:6px;height:5px;background:var(--text-primary);border-radius:1px"></span></span><span style="font-size:11px;font-weight:600;margin-left:2px">100%</span></span></div>
+      <div class="nav-bar" style="background:#fff;color:var(--text-primary)">
+        <span class="back" onclick="closeSubPage('cust-video')">&#8249;</span>培训视频
+      </div>
+    </div>
+    <div class="sp-body">
+      <div class="video-card">
+        <div class="video-cover" style="background:linear-gradient(135deg,#0A0A0A,#1A1A2E)">
+          <div class="play-btn">&#9654;</div>
+        </div>
+        <div class="video-info"><div class="vi-title">Klota 系统基础操作培训</div><div class="vi-meta">45min · 2026-04-15 · 1,203 次观看</div></div>
+      </div>
+      <div class="video-card">
+        <div class="video-cover" style="background:linear-gradient(135deg,#1A1A2E,#0A0A0A)">
+          <div class="play-btn">&#9654;</div>
+        </div>
+        <div class="video-info"><div class="vi-title">订单管理 & 退款操作详解</div><div class="vi-meta">32min · 2026-04-10 · 876 次观看</div></div>
+      </div>
+      <div class="video-card">
+        <div class="video-cover" style="background:linear-gradient(135deg,#0A0A0A,#333)">
+          <div class="play-btn">&#9654;</div>
+        </div>
+        <div class="video-info"><div class="vi-title">核销流程 & 闸机对接培训</div><div class="vi-meta">28min · 2026-03-28 · 654 次观看</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-page" id="sub-cust-contact">
+    <div class="sp-header">
+      <div class="status-bar"><span>16:00</span><span style="display:flex;gap:3px;align-items:center"><span style="width:16px;height:10px;border:1.5px solid var(--text-primary);border-radius:2px;position:relative"><span style="position:absolute;right:-3px;top:2px;width:2px;height:4px;background:var(--text-primary);border-radius:0 1px 1px 0"></span><span style="position:absolute;left:2px;top:1.5px;width:6px;height:5px;background:var(--text-primary);border-radius:1px"></span></span><span style="font-size:11px;font-weight:600;margin-left:2px">100%</span></span></div>
+      <div class="nav-bar" style="background:#fff;color:var(--text-primary)">
+        <span class="back" onclick="closeSubPage('cust-contact')">&#8249;</span>项目负责人
+      </div>
+    </div>
+    <div class="sp-body">
+      <div class="card" style="text-align:center;padding:28px">
+        <div class="avatar dark" style="width:64px;height:64px;font-size:24px;margin:0 auto 14px;box-shadow:var(--glow-md)">张</div>
+        <div style="font-size:18px;font-weight:700;letter-spacing:1px">张明远</div>
+        <div style="font-size:12px;color:var(--text-hint);margin-top:6px">项目经理 · 运维部</div>
+        <div style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:4px 14px;background:rgba(0,229,255,0.08);border:0.5px solid rgba(0,229,255,0.15);border-radius:20px;font-size:12px;color:var(--accent-glow);font-weight:500"><span style="width:6px;height:6px;border-radius:50%;background:var(--accent-glow);box-shadow:0 0 6px var(--accent-glow)"></span>在线</div>
+      </div>
+      <div class="card">
+        <div class="list-item" style="border:none;padding:10px 0"><div class="li-body"><div style="font-size:11px;color:var(--text-hint);letter-spacing:0.5px">联系电话</div><div style="font-size:14px;margin-top:4px;font-weight:500">138-XXXX-XXXX</div></div></div>
+        <div class="list-item" style="border:none;padding:10px 0"><div class="li-body"><div style="font-size:11px;color:var(--text-hint);letter-spacing:0.5px">企业微信</div><div style="font-size:14px;margin-top:4px;font-weight:500">zhangmingyuan</div></div></div>
+        <div class="list-item" style="border:none;padding:10px 0"><div class="li-body"><div style="font-size:11px;color:var(--text-hint);letter-spacing:0.5px">负责项目</div><div style="font-size:14px;margin-top:4px;font-weight:500">黄山、故宫等 36 个</div></div></div>
+        <div class="list-item" style="border:none;padding:10px 0"><div class="li-body"><div style="font-size:11px;color:var(--text-hint);letter-spacing:0.5px">历史服务</div><div style="font-size:14px;margin-top:4px;font-weight:500">咨询 47 次 · 工单 32 件 · 好评率 98%</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-page" id="sub-cust-new-ticket">
+    <div class="sp-header">
+      <div class="status-bar"><span>16:00</span><span style="display:flex;gap:3px;align-items:center"><span style="width:16px;height:10px;border:1.5px solid var(--text-primary);border-radius:2px;position:relative"><span style="position:absolute;right:-3px;top:2px;width:2px;height:4px;background:var(--text-primary);border-radius:0 1px 1px 0"></span><span style="position:absolute;left:2px;top:1.5px;width:6px;height:5px;background:var(--text-primary);border-radius:1px"></span></span><span style="font-size:11px;font-weight:600;margin-left:2px">100%</span></span></div>
+      <div class="nav-bar" style="background:#fff;color:var(--text-primary)">
+        <span class="back" onclick="closeSubPage('cust-new-ticket')">&#8249;</span>提交工单
+      </div>
+    </div>
+    <div class="sp-body">
+      <div class="form-group">
+        <label class="form-label">问题类型<span class="req">*</span></label>
+        <select class="form-select"><option>请选择</option><option>订单异常</option><option>退款问题</option><option>核销异常</option><option>短信通知</option><option>OTA对接</option><option>功能需求</option><option>其他</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">问题标题<span class="req">*</span></label>
+        <input class="form-input" placeholder="请简要描述问题">
+      </div>
+      <div class="form-group">
+        <label class="form-label">详细描述<span class="req">*</span></label>
+        <textarea class="form-textarea" placeholder="请详细描述问题现象、出现时间、影响范围等"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">相关渠道</label>
+        <select class="form-select"><option>请选择（如有）</option><option>携程</option><option>美团</option><option>飞猪</option><option>抖音</option><option>其他</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">附件上传</label>
+        <div style="border:1.5px dashed var(--border);border-radius:12px;padding:28px;text-align:center;color:var(--text-hint);font-size:13px;cursor:pointer;transition:all 0.2s">+ 点击上传截图或文件</div>
+      </div>
+      <button class="btn btn-primary" onclick="submitTicket()" style="margin-top:8px">提交工单</button>
+    </div>
+  </div>
+
+  <div class="sub-page" id="sub-cust-ticket-detail">
+    <div class="sp-header">
+      <div class="status-bar"><span>16:00</span><span style="display:flex;gap:3px;align-items:center"><span style="width:16px;height:10px;border:1.5px solid var(--text-primary);border-radius:2px;position:relative"><span style="position:absolute;right:-3px;top:2px;width:2px;height:4px;background:var(--text-primary);border-radius:0 1px 1px 0"></span><span style="position:absolute;left:2px;top:1.5px;width:6px;height:5px;background:var(--text-primary);border-radius:1px"></span></span><span style="font-size:11px;font-weight:600;margin-left:2px">100%</span></span></div>
+      <div class="nav-bar" style="background:#fff;color:var(--text-primary)">
+        <span class="back" onclick="closeSubPage('cust-ticket-detail')">&#8249;</span>工单详情
+      </div>
+    </div>
+    <div class="sp-body">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:16px;font-weight:700;letter-spacing:0.5px">门票订单退款失败</span>
+          <span class="badge badge-orange">处理中</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-hint)">GD-20260518-003 · 2026-05-18 14:30</div>
+      </div>
+      <div class="card">
+        <div style="font-size:13px;font-weight:600;margin-bottom:12px;letter-spacing:0.5px">处理进度</div>
+        <div class="timeline-item">
+          <div class="timeline-dot orange"></div>
+          <div class="timeline-body">
+            <div class="timeline-title">正在排查携程退款接口</div>
+            <div class="timeline-desc">已联系携程技术确认接口超时原因</div>
+            <div class="timeline-time">2026-05-19 10:15 · 张明远</div>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot cyan"></div>
+          <div class="timeline-body">
+            <div class="timeline-title">工单已受理</div>
+            <div class="timeline-desc">已分配至张明远处理</div>
+            <div class="timeline-time">2026-05-18 14:35 · 系统自动</div>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot blue"></div>
+          <div class="timeline-body">
+            <div class="timeline-title">工单已创建</div>
+            <div class="timeline-desc">用户提交退款异常问题</div>
+            <div class="timeline-time">2026-05-18 14:30 · 黄山风景区</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-page" id="sub-int-ticket-detail">
+    <div class="sp-header">
+      <div class="status-bar"><span>16:00</span><span style="display:flex;gap:3px;align-items:center"><span style="width:16px;height:10px;border:1.5px solid var(--text-primary);border-radius:2px;position:relative"><span style="position:absolute;right:-3px;top:2px;width:2px;height:4px;background:var(--text-primary);border-radius:0 1px 1px 0"></span><span style="position:absolute;left:2px;top:1.5px;width:6px;height:5px;background:var(--text-primary);border-radius:1px"></span></span><span style="font-size:11px;font-weight:600;margin-left:2px">100%</span></span></div>
+      <div class="nav-bar" style="background:#fff;color:var(--text-primary)">
+        <span class="back" onclick="closeSubPage('int-ticket-detail')">&#8249;</span>工单处理
+      </div>
+    </div>
+    <div class="sp-body">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:15px;font-weight:700">【加急】泰山景区核销异常</span>
+          <span class="badge badge-red">紧急</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-hint);margin-bottom:14px">GD-20260519-001 · 10min前</div>
+        <div style="background:rgba(250,81,81,0.06);border:0.5px solid rgba(250,81,81,0.15);border-radius:10px;padding:14px;font-size:13px;color:#FA5151;margin-bottom:14px;font-weight:500">&#9888; 闸机核销失败率突增至30%，已影响正常入园流程，需立即处理！</div>
+        <div style="font-size:13px;color:var(--text-secondary);line-height:1.8">
+          <p style="margin-bottom:8px"><strong>问题详情：</strong>从今日 09:00 起，泰山景区 4 号闸机核销失败率异常增高。</p>
+          <p><strong>影响范围：</strong>4 号闸机通道，约占总入园量 15%</p>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-size:13px;font-weight:600;margin-bottom:12px">分配工单</div>
+        <div class="form-group" style="margin-bottom:14px">
+          <label class="form-label">指派处理人</label>
+          <select class="form-select"><option>请选择</option><option>张明远 (9件)</option><option>李晓婷 (11件)</option><option>王浩然 (7件) 推荐</option></select>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="showToast('工单已分配给王浩然')">确认分配</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-page" id="sub-int-project-detail">
+    <div class="sp-header">
+      <div class="status-bar"><span>16:00</span><span style="display:flex;gap:3px;align-items:center"><span style="width:16px;height:10px;border:1.5px solid var(--text-primary);border-radius:2px;position:relative"><span style="position:absolute;right:-3px;top:2px;width:2px;height:4px;background:var(--text-primary);border-radius:0 1px 1px 0"></span><span style="position:absolute;left:2px;top:1.5px;width:6px;height:5px;background:var(--text-primary);border-radius:1px"></span></span><span style="font-size:11px;font-weight:600;margin-left:2px">100%</span></span></div>
+      <div class="nav-bar" style="background:#fff;color:var(--text-primary)">
+        <span class="back" onclick="closeSubPage('int-project-detail')">&#8249;</span>项目详情
+      </div>
+    </div>
+    <div class="sp-body">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:17px;font-weight:700;letter-spacing:1px">黄山风景区</span>
+          <span class="badge badge-orange">对接中</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-hint);margin-bottom:16px">HT-2025-0618 · 标准版 · 张明远</div>
+        <div class="step-flow">
+          <div class="step-dot done">&#10003;</div>
+          <div class="step-line done"></div>
+          <div class="step-dot done">&#10003;</div>
+          <div class="step-line done"></div>
+          <div class="step-dot active">3</div>
+          <div class="step-line pending"></div>
+          <div class="step-dot pending">4</div>
+          <div class="step-line pending"></div>
+          <div class="step-dot pending">5</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-hint);margin-top:8px">
+          <span>启动</span><span>搭建</span><span style="color:var(--accent);font-weight:600">OTA对接</span><span>联调</span><span>上线</span>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:12px">OTA对接进度</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+          <span style="font-size:12px;color:var(--text-secondary)">已完成 12 / 86 个渠道</span>
+          <span class="sci-num" style="font-size:16px;font-weight:700;color:#FA9D3B">14%</span>
+        </div>
+        <div class="progress-bar" style="height:8px;border-radius:4px;margin-bottom:16px"><div class="progress-fill orange" style="width:14%;border-radius:4px"></div></div>
+        <div style="font-size:12px;color:var(--text-hint);margin-bottom:10px;font-weight:500">已对接渠道：</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px">
+          <span class="channel-tag done">携程 &#10003;</span><span class="channel-tag done">美团 &#10003;</span><span class="channel-tag done">飞猪 &#10003;</span><span class="channel-tag done">去哪儿 &#10003;</span><span class="channel-tag done">同程 &#10003;</span><span class="channel-tag done">途牛 &#10003;</span><span class="channel-tag done">驴妈妈 &#10003;</span><span class="channel-tag done">抖音 &#10003;</span><span class="channel-tag done">快手 &#10003;</span><span class="channel-tag done">小红书 &#10003;</span><span class="channel-tag done">大众点评 &#10003;</span><span class="channel-tag done">口碑 &#10003;</span>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:14px">项目时间线</div>
+        <div class="timeline-item">
+          <div class="timeline-dot orange"></div>
+          <div class="timeline-body"><div class="timeline-title">OTA对接进行中</div><div class="timeline-desc">已完成综合平台和短视频渠道</div><div class="timeline-time">2026-05-10 · 当前</div></div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot cyan"></div>
+          <div class="timeline-body"><div class="timeline-title">培训完成</div><div class="timeline-desc">已完成3次培训，签到表已收集</div><div class="timeline-time">2026-05-05</div></div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-body"><div class="timeline-title">环境搭建完成</div><div class="timeline-desc">扫码购参数已确认</div><div class="timeline-time">2026-04-28</div></div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-body"><div class="timeline-title">项目启动</div><div class="timeline-desc">启动会已完成，标准版含扫码购</div><div class="timeline-time">2026-04-20</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-page" id="sub-int-tickets">
+    <div class="sp-header">
+      <div class="status-bar"><span>16:00</span><span style="display:flex;gap:3px;align-items:center"><span style="width:16px;height:10px;border:1.5px solid var(--text-primary);border-radius:2px;position:relative"><span style="position:absolute;right:-3px;top:2px;width:2px;height:4px;background:var(--text-primary);border-radius:0 1px 1px 0"></span><span style="position:absolute;left:2px;top:1.5px;width:6px;height:5px;background:var(--text-primary);border-radius:1px"></span></span><span style="font-size:11px;font-weight:600;margin-left:2px">100%</span></span></div>
+      <div class="nav-bar" style="background:#fff;color:var(--text-primary)">
+        <span class="back" onclick="closeSubPage('int-tickets')">&#8249;</span>工单分配
+      </div>
+    </div>
+    <div class="sp-body">
+      <div class="tab-filter" style="position:sticky;top:92px;z-index:10">
+        <div class="tf-item active">待分配(3)</div>
+        <div class="tf-item">进行中(9)</div>
+        <div class="tf-item">今日完成(8)</div>
+      </div>
+      <div style="padding-top:12px">
+        <div class="card" style="padding:0 16px">
+          <div class="list-item" onclick="showSubPage('int-ticket-detail')">
+            <div class="li-icon" style="background:rgba(250,81,81,0.08);color:#FA5151">&#128680;</div>
+            <div class="li-body"><div class="li-title">【加急】泰山景区核销异常</div><div class="li-desc">核销失败率30%</div></div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+              <span class="li-tag badge-red">紧急</span>
+              <button class="btn btn-sm btn-primary" onclick="event.stopPropagation();showSubPage('int-ticket-detail')">分配</button>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="li-icon" style="background:rgba(255,157,59,0.08);color:#FA9D3B">&#128279;</div>
+            <div class="li-body"><div class="li-title">峨眉山 OTA对接任务</div><div class="li-desc">邮件任务：新增4个渠道</div></div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+              <span class="li-tag badge-orange">待分配</span>
+              <button class="btn btn-sm btn-primary" onclick="event.stopPropagation()">分配</button>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="li-icon" style="background:rgba(0,229,255,0.08);color:var(--accent-glow)">&#128241;</div>
+            <div class="li-body"><div class="li-title">千岛湖 短信模板审核</div><div class="li-desc">新短信模板需审核</div></div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+              <span class="li-tag badge-cyan">常规</span>
+              <button class="btn btn-sm btn-primary" onclick="event.stopPropagation()">分配</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-page" id="sub-int-person">
+    <div class="sp-header">
+      <div class="status-bar"><span>16:00</span><span style="display:flex;gap:3px;align-items:center"><span style="width:16px;height:10px;border:1.5px solid var(--text-primary);border-radius:2px;position:relative"><span style="position:absolute;right:-3px;top:2px;width:2px;height:4px;background:var(--text-primary);border-radius:0 1px 1px 0"></span><span style="position:absolute;left:2px;top:1.5px;width:6px;height:5px;background:var(--text-primary);border-radius:1px"></span></span><span style="font-size:11px;font-weight:600;margin-left:2px">100%</span></span></div>
+      <div class="nav-bar" style="background:#fff;color:var(--text-primary)">
+        <span class="back" onclick="closeSubPage('int-person')">&#8249;</span>人员管理
+      </div>
+    </div>
+    <div class="sp-body">
+      <div class="person-card" onclick="showSubPage('cust-contact')">
+        <div class="avatar dark">张</div>
+        <div class="pc-info"><div class="pc-name">张明远</div><div class="pc-role">项目经理 · 在线</div></div>
+        <div class="pc-stats"><div class="num sci-num">9</div><div class="label">进行中工单</div></div>
+      </div>
+      <div class="person-card">
+        <div class="avatar orange">李</div>
+        <div class="pc-info"><div class="pc-name">李晓婷</div><div class="pc-role">运维工程师 · 在线</div></div>
+        <div class="pc-stats"><div class="num sci-num" style="color:#FA9D3B">11</div><div class="label">进行中工单</div></div>
+      </div>
+      <div class="person-card">
+        <div class="avatar blue">王</div>
+        <div class="pc-info"><div class="pc-name">王浩然</div><div class="pc-role">运维工程师 · 忙碌</div></div>
+        <div class="pc-stats"><div class="num sci-num" style="color:var(--accent-glow2)">7</div><div class="label">进行中工单</div></div>
+      </div>
+      <div style="font-size:12px;color:var(--text-hint);text-align:center;margin-top:16px">点击查看详情及关联工单</div>
+    </div>
+  </div>
+
+  <div id="toast" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(10,10,10,0.85);backdrop-filter:blur(10px);color:#fff;padding:14px 28px;border-radius:12px;font-size:14px;z-index:999;letter-spacing:0.5px;border:0.5px solid rgba(0,229,255,0.2)"></div>
+
+</div>
+
+<script>
+function enterPortal(portal) {
+  document.getElementById('rolePage').style.display = 'none';
+  if (portal === 'customer') document.getElementById('customerPortal').style.display = 'block';
+  else if (portal === 'internal') document.getElementById('internalPortal').style.display = 'block';
+  else if (portal === 'admin') document.getElementById('adminPortal').style.display = 'block';
+}
+function goBack() {
+  document.getElementById('customerPortal').style.display = 'none';
+  document.getElementById('internalPortal').style.display = 'none';
+  document.getElementById('adminPortal').style.display = 'none';
+  document.getElementById('rolePage').style.display = 'flex';
+}
+function switchCustTab(el, pageId) {
+  el.parentElement.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('#customerPortal > .page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+}
+function switchIntTab(el, pageId) {
+  el.parentElement.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('#internalPortal > .page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+}
+function switchAdmTab(el, pageId) {
+  el.parentElement.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('#adminPortal > .page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+}
+function showSubPage(id) { document.getElementById('sub-' + id).classList.add('show'); }
+function closeSubPage(id) { document.getElementById('sub-' + id).classList.remove('show'); }
+
+const faqData = [
+  { q: '订单在OTA显示已支付，但Klota未收到订单怎么办？', a: '1. 先检查OTA回调地址配置是否正确\n2. 登录Klota后台查看"接口日志"中是否有回调记录\n3. 如无回调记录，联系OTA技术确认回调机制\n4. 如有回调记录但状态异常，截图日志提交工单', tag: 'order' },
+  { q: '游客申请退款后，Klota多久会自动退款到OTA？', a: '正常情况下，Klota会在确认退款后30分钟内自动将退款指令推送至OTA。如超过2小时仍未退款：\n1. 检查退款状态是否为"已确认"\n2. 查看OTA接口返回是否正常\n3. 如异常，请提交工单处理', tag: 'refund' },
+  { q: '闸机扫码核销提示"二维码无效"如何处理？', a: '可能原因：\n1. 票已核销过 - 检查订单是否显示"已使用"\n2. 码已过期 - 检查门票有效期\n3. 渠道未同步 - 确认OTA订单已同步至Klota\n4. 如以上都正常，请记录订单号和核销码提交工单', tag: 'verify' },
+  { q: '短信通知发送失败或延迟怎么办？', a: '1. 先确认短信模板是否审核通过\n2. 检查短信余额是否充足\n3. 查看短信发送日志确认失败原因\n4. 如为服务商问题，运维部会自动切换备用服务商', tag: 'sms' },
+  { q: '新增OTA渠道对接需要多长时间？', a: '标准入驻版渠道对接通常需要：\n- 已入驻过的渠道：1-3个工作日\n- 新渠道首次入驻：5-10个工作日\n建议提前至少2周提出对接需求。', tag: 'ota' },
+  { q: '如何修改门票价格或库存？', a: '1. 登录Klota管理后台\n2. 进入"票务管理"-"价格设置"\n3. 修改后需同步至各OTA渠道\n4. OTA端修改可能有延迟（15-30分钟）', tag: 'order' },
+  { q: '同一个订单多人入园，核销码怎么用？', a: '1. 每张门票有独立的核销二维码\n2. 在"订单详情"中可查看每个成员的核销码\n3. 如核销码丢失，可在订单页面重新获取', tag: 'verify' },
+  { q: '退款到OTA后游客多久能收到退款？', a: '退款到账时间取决于OTA平台：\n- 携程/美团：1-3个工作日\n- 飞猪：3-7个工作日\n超过时间建议游客联系OTA客服查询。', tag: 'refund' },
+];
+
+function renderFAQ() {
+  document.getElementById('faqList').innerHTML = faqData.map(item => `
+    <div class="faq-item" data-tag="${item.tag}" onclick="toggleFAQ(this)">
+      <div class="faq-q"><span>${item.q}</span><span class="arrow">&#8250;</span></div>
+      <div class="faq-a">${item.a.replace(/\n/g, '<br>')}</div>
+    </div>
+  `).join('');
+}
+renderFAQ();
+
+function toggleFAQ(el) {
+  el.querySelector('.faq-a').classList.toggle('open');
+  el.querySelector('.arrow').classList.toggle('open');
+}
+
+let currentFAQTag = 'all';
+function filterFAQTag(el, tag) {
+  currentFAQTag = tag;
+  document.querySelectorAll('.section .tag').forEach(t => { t.classList.remove('active'); t.classList.add('inactive'); });
+  el.classList.remove('inactive'); el.classList.add('active');
+  applyFAQFilter();
+}
+function filterFAQ() { applyFAQFilter(); }
+function applyFAQFilter() {
+  const kw = document.getElementById('faqSearchInput').value.toLowerCase();
+  document.querySelectorAll('#faqList .faq-item').forEach(item => {
+    const tagMatch = currentFAQTag === 'all' || item.dataset.tag === currentFAQTag;
+    const textMatch = !kw || item.textContent.toLowerCase().includes(kw);
+    item.style.display = (tagMatch && textMatch) ? 'block' : 'none';
+  });
+}
+function filterCustTicket(el) {
+  el.parentElement.querySelectorAll('.tf-item').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 2000);
+}
+function submitTicket() {
+  showToast('工单提交成功');
+  setTimeout(() => closeSubPage('cust-new-ticket'), 1500);
+}
+</script>
+</body>
+</html>

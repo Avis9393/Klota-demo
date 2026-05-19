@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KLOTA 运维管理工具 - 演示</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: #F8F8FA;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+.card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 48px 40px;
+  text-align: center;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.06);
+  max-width: 420px;
+  width: 100%;
+}
+.logo {
+  width: 64px; height: 64px;
+  border: 1.5px solid rgba(0,180,216,0.2);
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1E2030;
+  background: #F8F8FA;
+  animation: float 3s ease-in-out infinite;
+}
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+.card h1 { font-size: 20px; color: #1E2030; font-weight: 600; letter-spacing: 1px; margin-bottom: 4px; }
+.card .subtitle { font-size: 13px; color: #9999AA; margin-bottom: 32px; }
+#qrcode {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+#qrcode img, #qrcode canvas {
+  border-radius: 12px;
+  border: 1px solid #E8E8EE;
+}
+.url-box {
+  background: #F8F8FA;
+  border: 1px solid #E8E8EE;
+  border-radius: 12px;
+  padding: 14px 18px;
+  font-size: 13px;
+  color: #1E2030;
+  word-break: break-all;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 8px;
+  font-family: 'SF Mono', 'Consolas', monospace;
+}
+.url-box:hover { border-color: #00B4D8; background: #f0f9fc; }
+.copy-hint { font-size: 12px; color: #bbb; margin-bottom: 20px; }
+.note {
+  background: #FFF8E1;
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-size: 12px;
+  color: #795548;
+  line-height: 1.8;
+  text-align: left;
+}
+.note strong { color: #E65100; }
+.steps {
+  margin-top: 20px;
+  text-align: left;
+  background: #F0FAFF;
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-size: 12px;
+  color: #1E2030;
+  line-height: 2;
+}
+.steps .num {
+  display: inline-block;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: #00B4D8;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 18px;
+  margin-right: 6px;
+}
+.divider { height: 1px; background: #E8E8EE; margin: 20px 0; }
+.footer { font-size: 11px; color: #ccc; margin-top: 24px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">K</div>
+  <h1>KLOTA 运维管理工具</h1>
+  <p class="subtitle">扫码即可体验完整功能演示</p>
+  <div id="qrcode"></div>
+  <div class="url-box" id="urlBox" onclick="copyUrl()"></div>
+  <div class="copy-hint">点击地址复制到剪贴板</div>
+  <div class="steps">
+    <div><span class="num">1</span>用手机浏览器或微信扫码</div>
+    <div><span class="num">2</span>首次打开可能需要点「继续访问」</div>
+    <div><span class="num">3</span>体验三个门户的完整功能</div>
+  </div>
+  <div class="divider"></div>
+  <div class="note">
+    <strong>提示：</strong>此链接由 Cloudflare 隧道生成，全球可访问，无需同一 WiFi。如链接失效，请在本地重新启动隧道服务。
+  </div>
+  <div class="footer">Klota Operations Demo &copy; 2026</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+(function() {
+  // Public tunnel URL
+  var url = 'https://eager-mice-arrive.loca.lt/index.html';
+  document.getElementById('urlBox').textContent = url;
+  new QRCode(document.getElementById('qrcode'), {
+    text: url,
+    width: 200,
+    height: 200,
+    colorDark: '#1E2030',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+})();
+function copyUrl() {
+  var text = document.getElementById('urlBox').textContent;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(function() {
+      var el = document.getElementById('urlBox');
+      el.textContent = '已复制到剪贴板！';
+      el.style.borderColor = '#00B4D8';
+      el.style.color = '#00B4D8';
+      setTimeout(function() { el.textContent = text; el.style.borderColor = ''; el.style.color = ''; }, 1500);
+    });
+  }
+}
+</script>
+</body>
+</html>
